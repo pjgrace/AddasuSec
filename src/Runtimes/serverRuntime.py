@@ -1,17 +1,16 @@
 import importlib
 import inspect
-
 from typing import get_type_hints
 from MetaArchitecture.MetaArchitecture import MetaArchitecture
 from MetaInterface.IMetaInterface import IMetaInterface
-from Runtimes import WebComponent
+from Runtimes import WebServerComponent
 from wsgiref.simple_server import make_server
 import falcon
 from falcon_auth import FalconAuthMiddleware, BasicAuthBackend
 import random
 import threading
 
-class rpcRuntime():
+class serverRuntime():
 
     def __init__(self, meta):
         print("intialise runtime")
@@ -46,7 +45,7 @@ class rpcRuntime():
         src_label = self.meta.getLabel(component_src);
         sink_label = self.meta.getLabel(component_intf);
         self.meta.addEdge(src_label, sink_label, intf_type)
-        return component_src.connect(component_intf, intf_type, self)
+        return component_src.connect(component_intf, intf_type)
     
     def removeE(self, all_interfaces, toRemove):
         for index in all_interfaces:
@@ -81,7 +80,7 @@ class rpcRuntime():
         module2 =  importlib.import_module(module)
         class_ = getattr(module2, module.rsplit('.', 1)[-1])
         instance = class_(component)
-        distributedComponent = WebComponent.WebComponent(instance)
+        distributedComponent = WebServerComponent.WebServerComponent(instance)
         self.meta.addNode(component, distributedComponent)
         
         all_interfaces = list((inspect.getmro(class_)))
@@ -113,8 +112,3 @@ class rpcRuntime():
 
     def delete(self, component_id):
       self.meta.removeNode(component_id)
-
-    
-
-    
-            

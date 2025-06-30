@@ -1,5 +1,4 @@
 from collections.abc import ValuesView
-
 import xmlrpc.client
 import requests
 import json
@@ -103,7 +102,7 @@ class rpcReceptacle:
             return False
         self._Comp = self
         compName = rt.meta.getLabel(pIUnkSink)
-        self.url += rt.getComponentAttributeValue(compName, "Host") + f"/{compName}/"
+        self.url += rt.meta.getComponentAttributeValue(compName, "Host") + f"/{compName}/"
         
         #xmlrpc.client.ServerProxy("http://localhost:8000")
         return True

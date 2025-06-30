@@ -7,7 +7,7 @@ class Calculator(component, ICalculate):
   receptacle2_type = "Examples.ISub"
 
   def __init__(self, name):
-      super().__init__(name, {self.receptacle1_type, self.receptacle2_type})
+      super().__init__({self.receptacle1_type, self.receptacle2_type})
 
   def add(self, a: int, b: int) -> int:
       adder = self.getReceptacle(self.receptacle1_type)

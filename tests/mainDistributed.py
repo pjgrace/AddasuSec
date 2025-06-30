@@ -1,21 +1,22 @@
-from receptacle import Receptacle
-from Runtimes.rpcRuntime import rpcRuntime
+from Runtimes.runtime import runtime
 import os
+from requests.auth import HTTPBasicAuth
+from MetaArchitecture.MetaArchitecture import MetaArchitecture
 import requests
 import json
-from requests.auth import HTTPBasicAuth
 
-opencom = rpcRuntime()
+meta = MetaArchitecture()
+opencom = runtime(meta)
 #receptacles = {"IAdd": Receptacle("IAdd"), "ISub": Receptacle("ISub")}
-x = opencom.create("Examples.Calculator", "Calculator1")
-y = opencom.create("Examples.Adder", "Adder1")
+x = opencom.create("web", "Examples.Calculator", "Calculator1")
+y = opencom.create("web", "Examples.Adder", "Adder1")
 
-lst_comps = opencom.getAllComponents()
+lst_comps = meta.getAllComponents()
 
 for index in lst_comps:
    print(f"component: {index} ")
    
-print(opencom.connect(x,y,"Examples.IAdd"))
+print(opencom.connect("web", x,y,"Examples.IAdd"))
 
 basic = HTTPBasicAuth('user', 'pass')
 

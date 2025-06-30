@@ -1,103 +1,81 @@
 import importlib
 import inspect
+from Runtimes.ComponentRuntime import ComponentRuntime
+from Runtimes.rpcRuntime import rpcRuntime
+from Runtimes.clientRuntime import clientRuntime
+from Runtimes.serverRuntime import serverRuntime
 
 from MetaArchitecture.MetaArchitecture import MetaArchitecture
-from MetaInterface.IMetaInterface import IMetaInterface
+from networkx.generators.tests.test_small import null
 
 
-class runtime(IMetaInterface):
-
-    def __init__(self):
+class runtime():
+    
+    def __init__(self, meta):
         print("intialise runtime")
-        self.meta = MetaArchitecture(self)
-        self.metaData = {}
-
-    def connect(self, component_src, component_intf, intf_type):
-        src_label = self.meta.getLabel(component_src);
-        sink_label = self.meta.getLabel(component_intf);
-        self.meta.addEdge(src_label, sink_label, intf_type)
-        return component_src.connect(component_intf, intf_type)
-    
-    def removeE(self, all_interfaces, toRemove):
-        for index in all_interfaces:
-            if index.__name__ == toRemove:
-                all_interfaces.remove(index)
-                return
-                
-
-    def create(self, module, component):
-        module2 =  importlib.import_module(module)
-        class_ = getattr(module2, module.rsplit('.', 1)[-1])
-        instance = class_(component)
+        self.meta = meta
+        self.plainRuntime = ComponentRuntime(meta)
+        self.webRuntime = rpcRuntime(meta)
+        self.clientRuntime = clientRuntime(meta)
+        self.serverRuntime = serverRuntime(meta)
         
-        all_interfaces = list((inspect.getmro(class_)))
-        self.removeE(all_interfaces, module.rsplit('.', 1)[-1])
-        self.removeE(all_interfaces, "component")
-        self.removeE(all_interfaces, "ABC")
-        self.removeE(all_interfaces, "object")
+     # CONNECT - Two Component in same address space.
+    
+    # This is the connect of two local address space components
+    # The causal connection updates the global meta model with the
+    # meta data
+    def connect(self, type, component_src, component_intf, intf_type):
+        match type:
+            case "plain":
+                return self.plainRuntime.connect(component_src, component_intf, intf_type)
+            case 'web':
+                return self.webRuntime.connect(component_src, component_intf, intf_type)
+            case 'web_client':
+                return self.clientRuntime.connect(component_src, component_intf, intf_type)
+            case 'web_server':
+                return self.serverRuntime.connect(component_src, component_intf, intf_type)
+            case _:
+                return 0   # 0 is the default case if x is not found
+    
+    # DISCONNECT - Two Component in same address space
+    def disconnect(self, type, component_src, component_intf, intf_type):
+        match type:
+            case "plain":
+                return self.plainRuntime.disconnect(component_src, component_intf, intf_type)
+            case 'web':
+                return self.webRuntime.disconnect(component_src, component_intf, intf_type)
+            case 'web_client':
+                return self.clientRuntime.disconnect(component_src, component_intf, intf_type)
+            case 'web_server':
+                return self.serverRuntime.disconnect(component_src, component_intf, intf_type)
+            case _:
+                return 0   # 0 is the default case if x is not found
+    
 
-        self.meta.addNode(component, instance)
-        self.metaData.update({component: {"Interface": {}}})
-        interim = self.metaData.get(component)
-        interim.update({"Receptacle": {}})
-        self.setComponentAttributeValue(component, "Interfaces", all_interfaces)
-        self.setComponentAttributeValue(component, "Receptacles", instance.receptacles)
-        
-        return instance
+    # CREATE - Plain component in the address space
+    def create(self, type, module, component):
+        match type:
+            case "plain":
+                return self.plainRuntime.create(module, component)
+            case 'web':
+                return self.webRuntime.create(module, component)
+            case 'web_client':
+                return self.clientRuntime.create(module, component)
+            case 'web_server':
+                return self.serverRuntime.create(module, component)
+            case _:
+                return 0   # 0 is the default case if x is not found
 
-    def delete(self, component_id):
-      self.meta.removeNode(component_id)
-
-    def visualise(self):
-        self.meta.visualise()
-        
-    def getAllComponents(self):
-        return self.meta.getAllComponents();
-    
-    def connectionsToIntf(self, component_label, intf):
-        return self.meta.connectionsToIntf(component_label, intf)
-    
-    def connectionsFromRecp(self, component_label, intf):
-        return self.meta.connectionsFromRecp(component_label, intf)
-    
-    def getInterfaces(self, component_label):
-        return self.metaData.get(component_label).get("Interfaces")
-
-    def getReceptacles(self, component_label):
-        return self.metaData.get(component_label).get("Receptacles")
-
-    def setInterfaceAttributeValue(self, component_label, iid, name, value):
-        interim = self.metaData.get(component_label).get("Interface").get(iid)
-        if interim == None:
-            interim2 = self.metaData.get(component_label).get("Interface")
-            interim2.update({iid: {name:value}}) 
-        else:
-            interim.update({name: value})
-    
-    def getInterfaceAttributeValue(self, component_label, iid, name):
-        return self.metaData.get(component_label).get("Interface").get(iid).get(name)
-    
-    def setReceptacleAttributeValue(self, component_label, iid, name, value):
-        interim = self.metaData.get(component_label).get("Receptacle").get(iid)
-        if interim == None:
-            interim2 = self.metaData.get(component_label).get("Receptacle")
-            interim2.update({iid: {name:value}}) 
-        else:
-            interim.update({name: value})
-    
-    def getReceptacleAttributeValue(self, component_label, iid, name):
-        return self.metaData.get(component_label).get("Receptacle").get(iid).get(name)
-    
-    def setComponentAttributeValue(self, component_label, name, value):
-        interim = self.metaData.get(component_label)
-        if interim == None:
-            self.metaData.update({component_label: {name:value}})
-        else:
-            interim.update({name: value})
-    
-    def getComponentAttributeValue(self, component_label, name):
-        return self.metaData.get(component_label).get("Component").get(name)
-    
-    
-    
-            
+    # DELETE - Plain component in the address space
+    def delete(self, type, component_id):
+        match type:
+            case "plain":
+                return self.plainRuntime.delete(component_id)
+            case 'web':
+                return self.webRuntime.delete(component_id)
+            case 'web_client':
+                return self.clientRuntime.delete(component_id)
+            case 'web_server':
+                return self.serverRuntime.delete(component_id)
+            case _:
+                return 0   # 0 is the default case if x is not found
