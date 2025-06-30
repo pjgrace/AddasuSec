@@ -1,16 +1,17 @@
-from AddasuSec.receptacle import Receptacle
+import AddasuSec.rpcReceptacle
 
 def data_storage_method(func):
     func.is_data_storage = True
     return func
 
-class component:
+class WebClientComponent:
     receptacles = {}
     
-    def __init__(self, receptacle_list):
-        for item in receptacle_list:
-            rcp = Receptacle(item)
-            self.receptacles[item] = rcp
+    def __init__(self, component):
+        self.innerComponent = component
+        for item in component.receptacles:
+            rcp = AddasuSec.rpcReceptacle.rpcReceptacle(item)
+            self.innerComponent.receptacles[item] = rcp
     
     def dynamic_call(self, name: str, *args, **kwargs):
         do = f"get_{name}"
@@ -22,15 +23,10 @@ class component:
         rp = self.receptacles.get(r_type)
         return rp._Comp
     
-    def setWrapper(self, c_inst):
-        self.wrapper = c_inst
-        
-    def getWrapper(self):
-        return self.wrapper
     
-    def connect(self, component, intf):
+    def connect(self, component, intf, rt):
         try:
-            return self.receptacles.get(intf).connect(component, intf)
+            return self.innerComponent.receptacles.get(intf).connect(component, intf, rt)
         except ValueError:
             return False
 

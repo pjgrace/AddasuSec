@@ -1,11 +1,12 @@
 #import matplotlib.pyplot as plt
 import networkx as nx
+from MetaInterface.IMetaInterface import IMetaInterface
 
-class MetaArchitecture:
-    def __init__(self, runtime):
+class MetaArchitecture(IMetaInterface):
+    def __init__(self):
         self.G = nx.DiGraph()
-        self.rt = runtime
         self.components = {}
+        self.metaData = {}
 
     def addNode(self, component_label, component):
         if list(self.G.nodes).__contains__(component_label):
@@ -13,6 +14,9 @@ class MetaArchitecture:
         else:
             self.G.add_node(component_label)
             self.components.update({component_label: component})
+            self.metaData.update({component_label: {"Interface": {}}})
+            interim = self.metaData.get(component_label)
+            interim.update({"Receptacle": {}})
 
     def removeNode(self, component_label):
         if list(self.G.nodes).__contains__(component_label):
@@ -60,3 +64,45 @@ class MetaArchitecture:
     
     def getAllComponents(self):
         return list(self.G.nodes())
+
+    def getInterfaces(self, component_label):
+        return self.metaData.get(component_label).get("Interfaces")
+
+    def getReceptacles(self, component_label):
+        return self.metaData.get(component_label).get("Receptacles")
+
+    def setInterfaceAttributeValue(self, component_label, iid, name, value):
+        interim = self.metaData.get(component_label).get("Interface").get(iid)
+        if interim == None:
+            interim2 = self.metaData.get(component_label).get("Interface")
+            interim2.update({iid: {name:value}}) 
+        else:
+            interim.update({name: value})
+    
+    def getInterfaceAttributeValue(self, component_label, iid, name):
+        return self.metaData.get(component_label).get("Interface").get(iid).get(name)
+    
+    def setReceptacleAttributeValue(self, component_label, iid, name, value):
+        interim = self.metaData.get(component_label).get("Receptacle").get(iid)
+        if interim == None:
+            interim2 = self.metaData.get(component_label).get("Receptacle")
+            interim2.update({iid: {name:value}}) 
+        else:
+            interim.update({name: value})
+    
+    def getReceptacleAttributeValue(self, component_label, iid, name):
+        return self.metaData.get(component_label).get("Receptacle").get(iid).get(name)
+    
+    def setComponentAttributeValue(self, component_label, name, value):
+        interim = self.metaData.get(component_label)
+        if interim == None:
+            self.metaData.update({component_label: {name:value}})
+        else:
+            self.metaData.get(component_label).update({name: value})
+            
+        print(self.metaData.get(component_label))
+    
+    def getComponentAttributeValue(self, component_label, name):
+        return self.metaData.get(component_label).get(name)
+    
+    

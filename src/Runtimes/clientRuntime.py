@@ -4,49 +4,24 @@ import inspect
 from typing import get_type_hints
 from MetaArchitecture.MetaArchitecture import MetaArchitecture
 from MetaInterface.IMetaInterface import IMetaInterface
-from Runtimes import WebComponent
-from wsgiref.simple_server import make_server
-import falcon
-from falcon_auth import FalconAuthMiddleware, BasicAuthBackend
-import random
+from Runtimes import WebClientComponent
+
 import threading
 
-class rpcRuntime():
+class clientRuntime():
 
     def __init__(self, meta):
         print("intialise runtime")
         self.meta = meta
-        self.port = 8000
-        #user_loader = lambda username, password: { 'username': username }
-        #auth_backend = BasicAuthBackend(user_loader)
-        #auth_middleware = FalconAuthMiddleware(auth_backend,
-        #                    exempt_routes=['/exempt'], exempt_methods=['HEAD'])
-        #self.app = falcon.App(middleware=[auth_middleware])
-        
-        
-    def threaded_function(self, app, port):
-        with make_server('', port, app) as httpd:
-            print(f"Serving on port {port}...")
-
-            # Serve until process is killed
-            httpd.serve_forever()
-        
-    def authenticate(self, user, password):
-        # Check if the user exists and the password match.
-        # This is just for the example
-        return random.choice((True, False))
-
-
-    def basic_user_loader(self, attributes, user, password):
-        if self.authenticate(user, password):
-            return {"username": user, "kind": "basic"}
-        return None
 
     def connect(self, component_src, component_intf, intf_type):
         src_label = self.meta.getLabel(component_src);
         sink_label = self.meta.getLabel(component_intf);
         self.meta.addEdge(src_label, sink_label, intf_type)
-        return component_src.connect(component_intf, intf_type, self)
+        
+        # Get the outer component body
+        comp_src_outer = component_src.getWrapper()
+        return comp_src_outer.connect(component_intf, intf_type, self)
     
     def removeE(self, all_interfaces, toRemove):
         for index in all_interfaces:
@@ -81,8 +56,9 @@ class rpcRuntime():
         module2 =  importlib.import_module(module)
         class_ = getattr(module2, module.rsplit('.', 1)[-1])
         instance = class_(component)
-        distributedComponent = WebComponent.WebComponent(instance)
-        self.meta.addNode(component, distributedComponent)
+        distributedComponent = WebClientComponent.WebClientComponent(instance)
+        self.meta.addNode(component, instance)
+        instance.setWrapper(distributedComponent)
         
         all_interfaces = list((inspect.getmro(class_)))
         self.removeE(all_interfaces, module.rsplit('.', 1)[-1])
@@ -90,26 +66,10 @@ class rpcRuntime():
         self.removeE(all_interfaces, "ABC")
         self.removeE(all_interfaces, "object")
         
-        app = falcon.App()
-        print(f"API is {app}")
-        thread = threading.Thread(target = self.threaded_function, args = (app, self.port,  ))
-        thread.start()
-        
-        for intf in all_interfaces:
-            methods = [attr for attr in dir(intf) if callable(getattr(intf, attr)) and not attr.startswith("__")]
-            for meth in methods:
-                path = self.meta.getLabel(distributedComponent)
-                route = f'/{path}/{meth}'
-                print(route)
-                app.add_route(route, distributedComponent)
-        
-        self.meta.setComponentAttributeValue(component, "Host",  f"localhost:{self.port}")
-
         self.meta.setComponentAttributeValue(component, "Interfaces", all_interfaces)
         self.meta.setComponentAttributeValue(component, "Receptacles", instance.receptacles)
 
-        self.port+=1
-        return distributedComponent
+        return instance
 
     def delete(self, component_id):
       self.meta.removeNode(component_id)
