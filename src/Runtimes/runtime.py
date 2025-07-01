@@ -4,7 +4,10 @@ from Runtimes.rpcRuntime import rpcRuntime
 from Runtimes.clientRuntime import clientRuntime
 from Runtimes.serverRuntime import serverRuntime
 from AddasuSec.component import component
-
+import requests
+import importlib
+import inspect
+import json
 # Exception raised during creation and deletion of components.
 class ComponentException(Exception):
     pass
@@ -80,6 +83,16 @@ class runtime():
             case _:
                 raise ComponentException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
 
+    # CREATE - Plain component in the address space
+    def remoteCreate(self, url, runtimeType:str, moduleType: str, componentName: str) -> component:
+        if not componentName.isalnum():
+            raise ComponentException("Component name is not alphanumeric")
+        try:
+            return self.createRemoteComponent(url, runtimeType, moduleType, componentName)
+        except Exception as e:
+            raise ComponentException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
+
+
     # DELETE - Plain component in the address space
     def delete(self, type, component_id):
         match type:
@@ -93,3 +106,59 @@ class runtime():
                 return self.serverRuntime.delete(component_id)
             case _:
                 raise ComponentException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
+
+    def createRemoteComponent(self, url, type_, module, component):
+        module2 =  importlib.import_module(module)
+        class_ = getattr(module2, module.rsplit('.', 1)[-1])
+        all_interfaces = list((inspect.getmro(class_)))
+        self.removeE(all_interfaces, module.rsplit('.', 1)[-1])
+        self.removeE(all_interfaces, "component")
+        self.removeE(all_interfaces, "ABC")
+        self.removeE(all_interfaces, "object")
+        instance = class_(component)
+        self.meta.addNode(component, instance)
+        
+
+        self.meta.setComponentAttributeValue(component, "Interfaces", all_interfaces)
+        self.meta.setComponentAttributeValue(component, "Receptacles", instance.receptacles)
+
+        resp = requests.post(f"{url}/create", json={
+            "type": type_,
+            "module": module,
+            "component": component
+        })
+        reply = json.loads(resp.text)
+        url = reply["result"]
+        self.meta.setComponentAttributeValue(component, "Host",  f"{url}")
+        return component
+
+    def delete_component(self, url, type_, component_id):
+        resp = requests.post(f"{url}/delete", json={
+            "type": type_,
+            "component_id": component_id
+        })
+        print(resp.json())
+
+    def connect_components(self, url, type_, src, intf, intf_type):
+        resp = requests.post(f"{url}/connect", json={
+            "type": type_,
+            "component_src": src,
+            "component_intf": intf,
+            "intf_type": intf_type
+        })
+        print(resp.json())
+
+    def disconnect_components(self, url, type_, src, intf, intf_type):
+        resp = requests.post(f"{url}/disconnect", json={
+            "type": type_,
+            "component_src": src,
+            "component_intf": intf,
+            "intf_type": intf_type
+        })
+        print(resp.json())
+        
+    def removeE(self, all_interfaces, toRemove):
+        for index in all_interfaces:
+            if index.__name__ == toRemove:
+                all_interfaces.remove(index)
+                return

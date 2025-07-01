@@ -27,4 +27,4 @@ x = requests.post(url, auth=basic)
 y = json.loads(x.text)
 
 # the result is a Python dictionary:
-print(y["sum"])
+print(y["<class 'int'>"])

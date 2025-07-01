@@ -13,8 +13,9 @@ class CreateComponentResource:
         module = data.get('module')
         component = data.get('component')
         result = rt.create(type_, module, component)
-        resp.media = {'status': 'created', 'result': component}
-
+        url_ret = meta.getComponentAttributeValue(component, "Host")
+        resp.media = {'status': 'created', 'result': url_ret}
+        print(url_ret)
 
 class DeleteComponentResource:
     def on_post(self, req, resp):

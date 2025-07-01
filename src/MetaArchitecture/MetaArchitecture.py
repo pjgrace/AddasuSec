@@ -29,6 +29,11 @@ class MetaArchitecture(IMetaInterface):
             return False
   
     def getLabel(self, component):
+        if isinstance(component, str):
+            if list(self.G.nodes).__contains__(component):
+                return component
+            else:
+                return None
         for key, value in self.components.items():
             if component == value:
                 return key
