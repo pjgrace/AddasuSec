@@ -3,7 +3,7 @@ import inspect
 from typing import get_type_hints
 from MetaArchitecture.MetaArchitecture import MetaArchitecture
 from MetaInterface.IMetaInterface import IMetaInterface
-from Runtimes import WebServerComponent
+from AddasuSec import WebServerComponent
 from wsgiref.simple_server import make_server
 import falcon
 from falcon_auth import FalconAuthMiddleware, BasicAuthBackend
@@ -13,7 +13,6 @@ import threading
 class serverRuntime():
 
     def __init__(self, meta):
-        print("intialise runtime")
         self.meta = meta
         self.port = 8000
         #user_loader = lambda username, password: { 'username': username }

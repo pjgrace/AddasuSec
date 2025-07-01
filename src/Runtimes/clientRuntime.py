@@ -4,14 +4,13 @@ import inspect
 from typing import get_type_hints
 from MetaArchitecture.MetaArchitecture import MetaArchitecture
 from MetaInterface.IMetaInterface import IMetaInterface
-from Runtimes import WebClientComponent
+from AddasuSec import WebClientComponent
 
 import threading
 
 class clientRuntime():
 
     def __init__(self, meta):
-        print("intialise runtime")
         self.meta = meta
 
     def connect(self, component_src, component_intf, intf_type):

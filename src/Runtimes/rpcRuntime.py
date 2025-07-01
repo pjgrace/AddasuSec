@@ -4,7 +4,7 @@ import inspect
 from typing import get_type_hints
 from MetaArchitecture.MetaArchitecture import MetaArchitecture
 from MetaInterface.IMetaInterface import IMetaInterface
-from Runtimes import WebComponent
+from AddasuSec import WebComponent
 from wsgiref.simple_server import make_server
 import falcon
 from falcon_auth import FalconAuthMiddleware, BasicAuthBackend
@@ -14,7 +14,6 @@ import threading
 class rpcRuntime():
 
     def __init__(self, meta):
-        print("intialise runtime")
         self.meta = meta
         self.port = 8000
         #user_loader = lambda username, password: { 'username': username }
