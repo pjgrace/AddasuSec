@@ -1,6 +1,7 @@
 #import matplotlib.pyplot as plt
 import networkx as nx
 from MetaInterface.IMetaInterface import IMetaInterface
+import matplotlib.pyplot as plt
 
 class MetaArchitecture(IMetaInterface):
     def __init__(self):
@@ -17,6 +18,7 @@ class MetaArchitecture(IMetaInterface):
             self.metaData.update({component_label: {"Interface": {}}})
             interim = self.metaData.get(component_label)
             interim.update({"Receptacle": {}})
+            return True
 
     def removeNode(self, component_label):
         if list(self.G.nodes).__contains__(component_label):
@@ -27,6 +29,11 @@ class MetaArchitecture(IMetaInterface):
             return False
   
     def getLabel(self, component):
+        if isinstance(component, str):
+            if list(self.G.nodes).__contains__(component):
+                return component
+            else:
+                return None
         for key, value in self.components.items():
             if component == value:
                 return key
@@ -40,7 +47,7 @@ class MetaArchitecture(IMetaInterface):
     def visualise(self):
         nx.draw(self.G, with_labels=True, font_weight='bold')
         nx.draw_networkx_edge_labels(self.G, pos=nx.spring_layout(self.G))
-        #plt.show()
+        plt.show()
     
     def connectionsToIntf(self, component_label, intf):
         ret_list = []
@@ -99,8 +106,6 @@ class MetaArchitecture(IMetaInterface):
             self.metaData.update({component_label: {name:value}})
         else:
             self.metaData.get(component_label).update({name: value})
-            
-        print(self.metaData.get(component_label))
     
     def getComponentAttributeValue(self, component_label, name):
         return self.metaData.get(component_label).get(name)

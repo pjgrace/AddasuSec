@@ -1,36 +1,27 @@
-'''
-Created on 3 Jun 2025
-
-@author: gracep
-'''
-from wsgiref.simple_server import make_server
 import falcon
 import inspect
 import datetime
 import uuid
 import json
 from AddasuSec import rpcReceptacle
-
 from networkx.generators.tests.test_small import null
 
 class WebComponent:
-    '''
-    classdocs
-    '''
+
     innerComponent = null
     receptacles = {}
     
     def __init__(self, component):
-        '''
-        Constructor
-        '''
         self.innerComponent = component
         for item in component.receptacles:
             rcp = rpcReceptacle.rpcReceptacle(item)
             self.innerComponent.receptacles[item] = rcp
+            
+    def call_and_serialize(self, method, *args, **kwargs):
+        result = method(*args, **kwargs)
+        return json.dumps(result)
     
     def on_get(self, req: falcon.Request, resp: falcon.Response) -> None:
-        """Handle GET requests."""
         resp.media = {
             'quote': "I've always been more interested in the future than in the past.",
             'author': 'Grace Hopper',
@@ -58,6 +49,7 @@ class WebComponent:
             # Dynamically invoke the method with arguments
             result = method(*args)
             print(f"Result of calling {nm}: {result}")
+            return_annotation = sig.return_annotation
         else:
             print(f"Method '{nm}' not found.")
             description = (
@@ -74,7 +66,8 @@ class WebComponent:
         # this example serves only to demonstrate how the context can be
         # used to pass arbitrary values between middleware components,
         # hooks, and resources.
-        resp.media = {'sum': result}
+        
+        resp.media = {f'{sig.return_annotation}': result}
 
         resp.set_header('Powered-By', 'Falcon')
         resp.status = falcon.HTTP_200
