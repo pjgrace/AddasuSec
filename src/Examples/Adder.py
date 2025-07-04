@@ -1,8 +1,8 @@
-from AddasuSec.component import component
+from AddasuSec.Component import Component
 from Examples.IAdd import IAdd
 
 
-class Adder(component, IAdd):
+class Adder(Component, IAdd):
 
   def __init__(self, name):
       super().__init__({})

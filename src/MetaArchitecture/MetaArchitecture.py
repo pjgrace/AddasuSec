@@ -71,6 +71,9 @@ class MetaArchitecture(IMetaInterface):
     
     def getAllComponents(self):
         return list(self.G.nodes())
+    
+    def getComponent(self, label):
+        return self.components.get(label)
 
     def getInterfaces(self, component_label):
         return self.metaData.get(component_label).get("Interfaces")

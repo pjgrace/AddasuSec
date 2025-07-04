@@ -1,11 +1,8 @@
-'''
-Created on 3 Jun 2025
 
-@author: gracep
-'''
 from wsgiref.simple_server import make_server
 import falcon
 import inspect
+import asyncio
 import datetime
 import uuid
 import json
@@ -33,8 +30,9 @@ class WebServerComponent:
             'quote': "I've always been more interested in the future than in the past.",
             'author': 'Grace Hopper',
         }
-        
+     
     def on_post(self, req, resp):
+        print("USER FROM CONTEXT:", getattr(req.context, "user", None))
         nm= req.path.rpartition('/')[-1]
         methods = [attr for attr in dir(self.innerComponent) if callable(getattr(self.innerComponent, attr)) and not attr.startswith("__")]
         print("Available methods:", methods)
@@ -54,7 +52,15 @@ class WebServerComponent:
                 print(f"  {name}: {annotation_str}")
                 args.append(self.get_typed_param(req, name, annotation_str))
             # Dynamically invoke the method with arguments
-            result = method(*args)
+                
+            if inspect.iscoroutinefunction(method):
+                result = asyncio.run(method("web", req, *args))
+            else:
+                try:
+                    result = method("web", req, *args)
+                except Exception as e:
+                    result = method(*args)
+                    
             print(f"Result of calling {nm}: {result}")
         else:
             print(f"Method '{nm}' not found.")

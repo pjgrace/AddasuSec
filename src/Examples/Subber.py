@@ -1,8 +1,8 @@
-from AddasuSec.component import component
+from AddasuSec.Component import Component
 from Examples.ISub import ISub
 
 
-class Subber(component, ISub):
+class Subber(Component, ISub):
   
   def __init__(self, name):
       super().__init__({})

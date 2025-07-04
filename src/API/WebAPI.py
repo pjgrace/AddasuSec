@@ -14,6 +14,8 @@ class CreateComponentResource:
         component = data.get('component')
         result = rt.create(type_, module, component)
         url_ret = meta.getComponentAttributeValue(component, "Host")
+        if url_ret is None:
+            url_ret = component
         resp.media = {'status': 'created', 'result': url_ret}
         print(url_ret)
 
