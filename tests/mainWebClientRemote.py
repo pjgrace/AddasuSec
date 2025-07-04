@@ -6,7 +6,7 @@ addasuMeta = MetaArchitecture()
 addasuSec = runtime(addasuMeta)
 #receptacles = {"IAdd": Receptacle("IAdd"), "ISub": Receptacle("ISub")}
 x = addasuSec.create("web_client", "Examples.Calculator", "Calculator1")
-y = addasuSec.createRemoteComponent("http://localhost:8654","web", "Examples.Adder", "Adder1")
+y = addasuSec.remoteCreate("http://localhost:8654","web", "Examples.Adder", "Adder1")
 
 print(addasuSec.connect("web_client", x,y,"Examples.IAdd"))
 

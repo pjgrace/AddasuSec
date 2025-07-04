@@ -6,7 +6,8 @@ from MetaInterface.IMetaInterface import IMetaInterface
 from AddasuSec import WebServerComponent
 from wsgiref.simple_server import make_server
 import falcon
-from falcon_auth import FalconAuthMiddleware, BasicAuthBackend
+from Runtimes.Auth.JWTMiddleware import JWTAuthMiddleware
+
 import random
 import threading
 
@@ -88,7 +89,8 @@ class serverRuntime():
         self.removeE(all_interfaces, "ABC")
         self.removeE(all_interfaces, "object")
         
-        app = falcon.App()
+        jwt_middleware = JWTAuthMiddleware()
+        app = falcon.App(middleware=[jwt_middleware])
         print(f"API is {app}")
         thread = threading.Thread(target = self.threaded_function, args = (app, self.port,  ))
         thread.start()

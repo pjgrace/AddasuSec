@@ -30,6 +30,9 @@ class ComponentRuntime():
             raise PlainConnectionException("Sink component does not exist")
         self.meta.addEdge(src_label, sink_label, intf_type)
         try:
+            if isinstance(component_src, str):
+                component_src = self.meta.getComponent(component_src)
+                
             return component_src.connect(component_intf, intf_type)
         except Exception as e:
             raise PlainConnectionException(f"Receptable-Interface connection failed - {e}")

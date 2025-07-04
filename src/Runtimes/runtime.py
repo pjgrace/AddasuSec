@@ -3,7 +3,7 @@ from Runtimes.ComponentRuntime import ComponentRuntime, PlainComponentException,
 from Runtimes.rpcRuntime import rpcRuntime
 from Runtimes.clientRuntime import clientRuntime
 from Runtimes.serverRuntime import serverRuntime
-from AddasuSec.component import component
+from AddasuSec import Component
 import requests
 import importlib
 import inspect
@@ -63,8 +63,8 @@ class runtime():
 
     
 
-    # CREATE - Plain component in the address space
-    def create(self, runtimeType:str, moduleType: str, componentName: str) -> component:
+    # CREATE - Plain Component in the address space
+    def create(self, runtimeType:str, moduleType: str, componentName: str) -> Component:
         if not componentName.isalnum():
             raise ComponentException("Component name is not alphanumeric")
         match runtimeType:
@@ -79,12 +79,12 @@ class runtime():
             case 'web_client':
                 return self.clientRuntime.create(moduleType, componentName)
             case 'web_server':
-                return self.serverRuntime.create(componentName, componentName)
+                return self.serverRuntime.create(moduleType, componentName)
             case _:
                 raise ComponentException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
 
-    # CREATE - Plain component in the address space
-    def remoteCreate(self, url, runtimeType:str, moduleType: str, componentName: str) -> component:
+    # CREATE - Plain Component in the address space
+    def remoteCreate(self, url, runtimeType:str, moduleType: str, componentName: str) -> Component:
         if not componentName.isalnum():
             raise ComponentException("Component name is not alphanumeric")
         try:
@@ -107,30 +107,30 @@ class runtime():
             case _:
                 raise ComponentException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
 
-    def createRemoteComponent(self, url, type_, module, component):
+    def createRemoteComponent(self, url, type_, module, Component):
         module2 =  importlib.import_module(module)
         class_ = getattr(module2, module.rsplit('.', 1)[-1])
         all_interfaces = list((inspect.getmro(class_)))
         self.removeE(all_interfaces, module.rsplit('.', 1)[-1])
-        self.removeE(all_interfaces, "component")
+        self.removeE(all_interfaces, "Component")
         self.removeE(all_interfaces, "ABC")
         self.removeE(all_interfaces, "object")
-        instance = class_(component)
-        self.meta.addNode(component, instance)
+        instance = class_(Component)
+        self.meta.addNode(Component, instance)
         
 
-        self.meta.setComponentAttributeValue(component, "Interfaces", all_interfaces)
-        self.meta.setComponentAttributeValue(component, "Receptacles", instance.receptacles)
+        self.meta.setComponentAttributeValue(Component, "Interfaces", all_interfaces)
+        self.meta.setComponentAttributeValue(Component, "Receptacles", instance.receptacles)
 
         resp = requests.post(f"{url}/create", json={
             "type": type_,
             "module": module,
-            "component": component
+            "Component": Component
         })
         reply = json.loads(resp.text)
         url = reply["result"]
-        self.meta.setComponentAttributeValue(component, "Host",  f"{url}")
-        return component
+        self.meta.setComponentAttributeValue(Component, "Host",  f"{url}")
+        return Component
 
     def delete_component(self, url, type_, component_id):
         resp = requests.post(f"{url}/delete", json={
@@ -138,8 +138,10 @@ class runtime():
             "component_id": component_id
         })
         print(resp.json())
+        reply = json.loads(resp.text)
+        return reply["result"]
 
-    def connect_components(self, url, type_, src, intf, intf_type):
+    def remoteConnect(self, url, type_, src, intf, intf_type):
         resp = requests.post(f"{url}/connect", json={
             "type": type_,
             "component_src": src,
