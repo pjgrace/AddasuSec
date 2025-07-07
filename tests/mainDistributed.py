@@ -8,8 +8,8 @@ import json
 meta = MetaArchitecture()
 opencom = runtime(meta)
 #receptacles = {"IAdd": Receptacle("IAdd"), "ISub": Receptacle("ISub")}
-x = opencom.create("web", "Examples.Calculator", "Calculator1")
-y = opencom.create("web", "Examples.Adder", "Adder1")
+x = opencom.create("web", "Examples.Calculator", "Calculator1", False)
+y = opencom.create("web", "Examples.Adder", "Adder1", False)
 
 lst_comps = meta.getAllComponents()
 

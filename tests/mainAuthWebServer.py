@@ -7,8 +7,8 @@ from MetaArchitecture.MetaArchitecture import MetaArchitecture
 meta = MetaArchitecture()
 opencom = runtime(meta)
 #receptacles = {"IAdd": Receptacle("IAdd"), "ISub": Receptacle("ISub")}
-x = opencom.create("plain", "Examples.CalculatorAuthZ", "Calculator1")
-y = opencom.create("plain", "Examples.Adder", "Adder1")
+x = opencom.create("web_server", "Examples.CalculatorAuthZ", "Calculator1", True)
+y = opencom.create("plain", "Examples.Adder", "Adder1", False)
 
 print(opencom.connect("web_server", x,y,"Examples.IAdd"))
 
@@ -23,14 +23,14 @@ print("Obtained JWT token:", token)
 url = 'http://localhost:8000/Calculator1/add?a=676&b=8'
 headers = {"Authorization": f"Bearer {token}"}
 
-#x = requests.post(url, headers=headers)
+x = requests.post(url, headers=headers)
 # parse x:
-#y = json.loads(x.text)
+y = json.loads(x.text)
 
 # the result is a Python dictionary:
-#print(y["sum"])
+print(y["sum"])
 
-print(x.add(1,8))
+#print(x.add(1,8))
 
 meta.setInterfaceAttributeValue("Calculator1", "Examples.IAdd",  "Variation", 8)
 print(meta.getInterfaceAttributeValue("Calculator1", "Examples.IAdd",  "Variation"))        

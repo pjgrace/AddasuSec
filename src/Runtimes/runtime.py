@@ -24,7 +24,16 @@ class runtime():
         self.webRuntime = rpcRuntime(meta)
         self.clientRuntime = clientRuntime(meta)
         self.serverRuntime = serverRuntime(meta)
-        
+    
+    def receptacle_with_token(self, func, *args, **kwargs):
+        stack = inspect.stack()
+        previous_frame = stack[2].frame
+        # Get local variables (including parameters) from that frame
+        prev_args = previous_frame.f_locals
+        print("Previous call's arguments:", prev_args)
+    
+        return func(prev_args['req'], *args, **kwargs)
+    
      # CONNECT - Two Component in same address space.
     
     # This is the connect of two local address space components
@@ -64,13 +73,13 @@ class runtime():
     
 
     # CREATE - Plain Component in the address space
-    def create(self, runtimeType:str, moduleType: str, componentName: str) -> Component:
+    def create(self, runtimeType:str, moduleType: str, componentName: str, secure:bool) -> Component:
         if not componentName.isalnum():
             raise ComponentException("Component name is not alphanumeric")
         match runtimeType:
             case "plain":
                 try:
-                    return self.plainRuntime.create(moduleType, componentName)
+                    return self.plainRuntime.create(moduleType, componentName, secure)
                 except PlainComponentException as e:
                     raise ComponentException(e) 
 
@@ -79,16 +88,16 @@ class runtime():
             case 'web_client':
                 return self.clientRuntime.create(moduleType, componentName)
             case 'web_server':
-                return self.serverRuntime.create(moduleType, componentName)
+                return self.serverRuntime.create(moduleType, componentName, secure)
             case _:
                 raise ComponentException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
 
     # CREATE - Plain Component in the address space
-    def remoteCreate(self, url, runtimeType:str, moduleType: str, componentName: str) -> Component:
+    def remoteCreate(self, url, runtimeType:str, moduleType: str, componentName: str, secure: bool) -> Component:
         if not componentName.isalnum():
             raise ComponentException("Component name is not alphanumeric")
         try:
-            return self.createRemoteComponent(url, runtimeType, moduleType, componentName)
+            return self.createRemoteComponent(url, runtimeType, moduleType, componentName, secure)
         except Exception as e:
             raise ComponentException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
 
@@ -107,7 +116,7 @@ class runtime():
             case _:
                 raise ComponentException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
 
-    def createRemoteComponent(self, url, type_, module, Component):
+    def createRemoteComponent(self, url, type_, module, Component, secure):
         module2 =  importlib.import_module(module)
         class_ = getattr(module2, module.rsplit('.', 1)[-1])
         all_interfaces = list((inspect.getmro(class_)))
@@ -125,7 +134,8 @@ class runtime():
         resp = requests.post(f"{url}/create", json={
             "type": type_,
             "module": module,
-            "Component": Component
+            "component": Component,
+            "secure": secure
         })
         reply = json.loads(resp.text)
         url = reply["result"]

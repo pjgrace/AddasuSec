@@ -1,4 +1,4 @@
-import AddasuSec.rpcReceptacle
+import AddasuSec.WebReceptacle
 
 def data_storage_method(func):
     func.is_data_storage = True
@@ -10,7 +10,7 @@ class WebClientComponent:
     def __init__(self, component):
         self.innerComponent = component
         for item in component.receptacles:
-            rcp = AddasuSec.rpcReceptacle.rpcReceptacle(item)
+            rcp = AddasuSec.WebReceptacle.WebReceptacle(item)
             self.innerComponent.receptacles[item] = rcp
     
     def dynamic_call(self, name: str, *args, **kwargs):

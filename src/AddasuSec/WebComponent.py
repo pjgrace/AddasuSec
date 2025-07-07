@@ -3,18 +3,19 @@ import inspect
 import datetime
 import uuid
 import json
-from AddasuSec import rpcReceptacle
+from AddasuSec import WebReceptacle
 from networkx.generators.tests.test_small import null
 
 class WebComponent:
 
     innerComponent = null
     receptacles = {}
+    secure=False
     
     def __init__(self, component):
         self.innerComponent = component
         for item in component.receptacles:
-            rcp = rpcReceptacle.rpcReceptacle(item)
+            rcp = WebReceptacle.WebReceptacle(item)
             self.innerComponent.receptacles[item] = rcp
             
     def call_and_serialize(self, method, *args, **kwargs):
@@ -117,3 +118,5 @@ class WebComponent:
         except ValueError:
             return False
         
+    def setSecure(self, value):
+        self.secure = value

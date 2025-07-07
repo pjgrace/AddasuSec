@@ -10,8 +10,8 @@ Author: Paul Grace
 License: MIT
 """
 
-from AddasuSec.receptacle import Receptacle
-
+from AddasuSec.Receptacle import Receptacle
+import inspect
 
 def data_storage_method(func):
     """
@@ -26,16 +26,28 @@ def data_storage_method(func):
     func.is_data_storage = True
     return func
 
+def stakeholder_io_method(func):
+    """
+    Decorator that marks a function as a data input/output method.
 
-class Component:
+    Args:
+        func (callable): The function to mark.
+
+    Returns:
+        callable: The same function with an added attribute.
+    """
+    func.is_data_storage = True
+    return func
+
+class Component():
     """
     Represents a software component with explicitly defined dependencies (receptacles).
     Components can dynamically connect to other components through labeled interfaces.
     """
 
-    receptacles = {}
-
     def __init__(self, receptacle_list):
+        self.receptacles = {}
+        self.secure = False
         """
         Initialize the component with a list of receptacle types.
 
@@ -46,19 +58,18 @@ class Component:
             rcp = Receptacle(item)
             self.receptacles[item] = rcp
 
-    def dynamic_call(self, name: str, *args, **kwargs):
-        """
-        Dynamically call a getter method based on the name provided.
-
-        Args:
-            name (str): The suffix of the getter method name (e.g., 'foo' for 'get_foo').
-            *args: Positional arguments to pass to the method.
-            **kwargs: Keyword arguments to pass to the method.
-        """
-        do = f"get_{name}"
-        if hasattr(self, do) and callable(getattr(self, do)):
-            func = getattr(self, do)
-            func(*args, **kwargs)
+    def call_with_token(self, func, token, *args, **kwargs):
+        print(f"Calling {func.__name__} with token: {token}")
+        return func(token, *args, **kwargs)
+    
+    def receptacle_with_token(self, func, *args, **kwargs):
+        stack = inspect.stack()
+        previous_frame = stack[2].frame
+        # Get local variables (including parameters) from that frame
+        prev_args = previous_frame.f_locals
+        print("Previous call's arguments:", prev_args)
+    
+        return func(prev_args['req'], *args, **kwargs)
 
     def getReceptacle(self, r_type):
         """
@@ -124,6 +135,9 @@ class Component:
         except ValueError:
             return False
 
+    def setSecure(self, value):
+        self.secure = value
+    
     def start(self, param):
         """
         Start the component. This is a stub meant to be overridden.
