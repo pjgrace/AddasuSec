@@ -6,7 +6,7 @@ import asyncio
 import datetime
 import uuid
 import json
-from AddasuSec.receptacle import Receptacle
+from AddasuSec.Receptacle import Receptacle
 
 from networkx.generators.tests.test_small import null
 
@@ -16,6 +16,7 @@ class WebServerComponent:
     '''
     innerComponent = null
     receptacles = {}
+    secure = False
     
     def __init__(self, component):
         '''
@@ -54,10 +55,10 @@ class WebServerComponent:
             # Dynamically invoke the method with arguments
                 
             if inspect.iscoroutinefunction(method):
-                result = asyncio.run(method("web", req, *args))
+                result = asyncio.run(method(req, *args))
             else:
                 try:
-                    result = method("web", req, *args)
+                    result = method(req, *args)
                 except Exception as e:
                     result = method(*args)
                     
@@ -127,4 +128,6 @@ class WebServerComponent:
             return self.innerComponent.receptacles.get(intf).connect(component, intf)
         except ValueError:
             return False
-        
+    
+    def setSecure(self, value):
+        self.secure = value

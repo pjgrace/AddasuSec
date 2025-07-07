@@ -75,11 +75,38 @@ class serverRuntime():
         return_type = type_hints.get('return', 'Any')
         print(f"  Returns: {return_type}\n")
 
+    def is_wrapped_by_role_required(self, method):
+        """
+        Detect if the method has been wrapped by the `role_required` decorator.
+        Works on bound or unbound methods.
+        """
+        # If bound method, get the actual function
+        #func = getattr(method, "__func__", method)
+        #print(func)
+        # Unwrap all the way
+        #while True:
+        if getattr(method, "_is_role_required", False):
+            return True
+        elif not hasattr(method, "__wrapped__"):
+            func = method.__wrapped__  # Might still be a bound method
+            func = getattr(func, "__func__", func)  # Unwrap if wrapped bound method
+            if getattr(func, "_is_role_required", False):
+                return True
+        else:
+            return False
 
-    def create(self, module, component):
+    def get_instance_methods(self, instance):
+        return [
+            (name, getattr(instance, name))
+            for name in dir(instance)
+            if callable(getattr(instance, name)) and not name.startswith("__")
+        ]
+
+    def create(self, module, component, secure):
         module2 =  importlib.import_module(module)
         class_ = getattr(module2, module.rsplit('.', 1)[-1])
         instance = class_(component)
+        instance.setSecure(secure)
         distributedComponent = WebServerComponent.WebServerComponent(instance)
         self.meta.addNode(component, distributedComponent)
         
@@ -89,8 +116,11 @@ class serverRuntime():
         self.removeE(all_interfaces, "ABC")
         self.removeE(all_interfaces, "object")
         
-        jwt_middleware = JWTAuthMiddleware()
-        app = falcon.App(middleware=[jwt_middleware])
+        if secure:
+            jwt_middleware = JWTAuthMiddleware()
+            app = falcon.App(middleware=[jwt_middleware])
+        else:
+            app = falcon.App()
         print(f"API is {app}")
         thread = threading.Thread(target = self.threaded_function, args = (app, self.port,  ))
         thread.start()

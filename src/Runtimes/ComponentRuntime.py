@@ -42,11 +42,10 @@ class ComponentRuntime():
         src_label = self.meta.getLabel(component_src);
         sink_label = self.meta.getLabel(component_intf);
         self.meta.removeEdge(src_label, sink_label, intf_type)
-        return component_src.disconnect(component_intf, intf_type)
+        return component_src.disconnect(intf_type)
     
-
     # CREATE - Plain component in the address space
-    def create(self, module, component):
+    def create(self, module, component, secure):
         try:
             module2 =  importlib.import_module(module)
             class_ = getattr(module2, module.rsplit('.', 1)[-1])
@@ -76,4 +75,4 @@ class ComponentRuntime():
 
     # DELETE - Plain component in the address space
     def delete(self, component_id):
-        self.meta.removeNode(component_id)
+        return self.meta.removeNode(component_id)

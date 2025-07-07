@@ -1,16 +1,12 @@
-from collections.abc import ValuesView
-import xmlrpc.client
 import requests
 import json
 from requests.auth import HTTPBasicAuth
 import inspect
 import importlib
-from pydoc import locate
 
-
-class rpcReceptacle:
-    def __init__(self, id):
-        self.iid = id
+class WebReceptacle:
+    def __init__(self, iden):
+        self.iid = iden
         self._Comp = None
         self.m_connID = -1
         self.meta_Data = {}
@@ -71,7 +67,7 @@ class rpcReceptacle:
 
     def get_method_signature_from_class_name(self, class_name: str, method_name: str):
         # Locate the class using full path, e.g., 'Examples.IAdd'
-         # Import the module (e.g., 'Examples')
+        # Import the module (e.g., 'Examples')
         module = importlib.import_module(class_name)
         classname = class_name.split('.')[-1]
                 # Get the class
@@ -87,7 +83,7 @@ class rpcReceptacle:
         if raw_method is None:
             raise AttributeError(f"Method '{method_name}' not found directly in class '{class_name}'")
 
-        # Unwrap staticmethod/classmethod if needed
+        # Unwrap static method/classmethod if needed
         if isinstance(raw_method, (staticmethod, classmethod)):
             func = raw_method.__func__
         else:
@@ -107,8 +103,8 @@ class rpcReceptacle:
         #xmlrpc.client.ServerProxy("http://localhost:8000")
         return True
 
-    def disconnect(self, id):
-        if(id!=self.m_connID):
+    def disconnect(self, iden):
+        if(iden!=self.m_connID):
             return False
         self._Comp = None
         return True
@@ -117,8 +113,8 @@ class rpcReceptacle:
         self.meta_Data.update([name, value])
 
     def getValue(self, name):
-      return self.meta_Data.get(name)
+        return self.meta_Data.get(name)
 
     def getValues(self):
-      return self.meta_Data.keys
+        return self.meta_Data.keys
         

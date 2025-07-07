@@ -12,7 +12,8 @@ class CreateComponentResource:
         type_ = data.get('type')
         module = data.get('module')
         component = data.get('component')
-        result = rt.create(type_, module, component)
+        secure = data.get('secure')
+        result = rt.create(type_, module, component, secure)
         url_ret = meta.getComponentAttributeValue(component, "Host")
         if url_ret is None:
             url_ret = component

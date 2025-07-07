@@ -7,8 +7,8 @@ from MetaArchitecture.MetaArchitecture import MetaArchitecture
 meta = MetaArchitecture()
 opencom = runtime(meta)
 #receptacles = {"IAdd": Receptacle("IAdd"), "ISub": Receptacle("ISub")}
-x = opencom.create("web_server", "Examples.Calculator", "Calculator1")
-y = opencom.create("plain", "Examples.Adder", "Adder1")
+x = opencom.create("web_server", "Examples.Calculator", "Calculator1", False)
+y = opencom.create("plain", "Examples.Adder", "Adder1", False)
 
 print(opencom.connect("web_server", x,y,"Examples.IAdd"))
 

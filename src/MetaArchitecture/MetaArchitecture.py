@@ -41,8 +41,15 @@ class MetaArchitecture(IMetaInterface):
     def addEdge(self, src, intf, intf_type):
         self.G.add_edge(src, intf, interface = intf_type)
 
-    def removeEdge(self, src, intf):
-        self.G.remove_edge(src, intf)
+    def removeEdge(self, src, intf, intf_type):
+        if self.G.has_edge(src, intf):
+            edge_data = self.G.get_edge_data(src, intf)
+            if edge_data.get("interface") == intf_type:
+                self.G.remove_edge(src, intf)
+                return True
+        else:
+            print(f"Edge exists but interface type does not match: {edge_data}")
+        return False
 
     def visualise(self):
         nx.draw(self.G, with_labels=True, font_weight='bold')
@@ -76,11 +83,25 @@ class MetaArchitecture(IMetaInterface):
         return self.components.get(label)
 
     def getInterfaces(self, component_label):
-        return self.metaData.get(component_label).get("Interfaces")
+        interfaces = self.metaData.get(component_label, {}).get("Interfaces", [])
+
+        # Convert to full class name strings
+        class_names = [
+            f"{cls.__module__}.{cls.__name__}"
+            for cls in interfaces
+        ]
+    
+        # Filter out the unwanted class
+        filtered_names = [
+            name for name in class_names
+            if name != "AddasuSec.Component.Component"
+        ]
+
+        return filtered_names
 
     def getReceptacles(self, component_label):
         return self.metaData.get(component_label).get("Receptacles")
-
+    
     def setInterfaceAttributeValue(self, component_label, iid, name, value):
         interim = self.metaData.get(component_label).get("Interface").get(iid)
         if interim == None:

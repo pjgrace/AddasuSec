@@ -1,9 +1,8 @@
 from AddasuSec.Component import Component
-from Examples.ICalculateAuthZ import ICalculateAuthZ 
-from Runtimes.Auth.AuthDecorator import protect_component_with_role,\
-    role_required
+from Examples.ICalculate import ICalculate 
+from Runtimes.Auth.AuthDecorator import role_required
 
-class CalculatorAuthZ(Component, ICalculateAuthZ):
+class CalculatorAuthZ(Component, ICalculate):
 
     receptacle1_type = "Examples.IAdd"
     receptacle2_type = "Examples.ISub"
@@ -14,7 +13,9 @@ class CalculatorAuthZ(Component, ICalculateAuthZ):
     @role_required('admin')
     def add(self, a: int, b: int) -> int:
         adder = self.getReceptacle(self.receptacle1_type)
-        return adder.add(a,b)
+        return adder.receptacle_with_token(adder.add, a, b)
     
+    @role_required('admin')
     def sub(self, a, b):
-        return self.getReceptacle(self.receptacle2_type).sub(a,b)
+        subber = self.getReceptacle(self.receptacle2_type)
+        return subber.receptacle_with_token(subber.sub, a, b)

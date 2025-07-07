@@ -10,7 +10,7 @@ Updated: 2025-07-02
 License: MIT
 """
 
-from AddasuSec.receptacle import Receptacle
+from AddasuSec.Receptacle import Receptacle
 from Runtimes.runtime import runtime, ComponentException, ConnectionException
 import os, sys
 from MetaArchitecture.MetaArchitecture import MetaArchitecture
@@ -24,13 +24,14 @@ REMOTE_RUNTIME = "http://localhost:8654"
 
 #create an initial set of components on the remote host
 try:
-    calc1 = addasuSec.remoteCreate(REMOTE_RUNTIME, "plain", "Examples.Calculator", "Calculator1")
+    calc1 = addasuSec.remoteCreate(REMOTE_RUNTIME, "plain", "Examples.Calculator", "Calculator1", False)
     print(f"Component created: component identifier is {addasuMeta.getLabel(calc1)}")
-    calc2 = addasuSec.remoteCreate(REMOTE_RUNTIME, "plain", "Examples.Calculator", "Calculator2")
+    
+    calc2 = addasuSec.remoteCreate(REMOTE_RUNTIME, "plain", "Examples.Calculator", "Calculator2", False)
     print(f"Component created: component identifier is {addasuMeta.getLabel(calc2)}")
-    add1 = addasuSec.remoteCreate(REMOTE_RUNTIME, "plain", "Examples.Adder", "Adder1")
+    add1 = addasuSec.remoteCreate(REMOTE_RUNTIME, "plain", "Examples.Adder", "Adder1", False)
     print(f"Component created: component identifier is {addasuMeta.getLabel(add1)}")
-    sub1 = addasuSec.remoteCreate(REMOTE_RUNTIME, "plain", "Examples.Subber", "Subber1")
+    sub1 = addasuSec.remoteCreate(REMOTE_RUNTIME, "plain", "Examples.Subber", "Subber1", False)
     print(f"Component created: component identifier is {addasuMeta.getLabel(sub1)}")
 except ComponentException as e:
     print("Exception creating a component:", e)
@@ -38,7 +39,7 @@ except ComponentException as e:
 
 #try to create another component with the same name, this should raise and exception and continue
 try:
-    add1 = addasuSec.remoteCreate(REMOTE_RUNTIME, "plain", "Examples.Adder", "Adder1")
+    add1 = addasuSec.remoteCreate(REMOTE_RUNTIME, "plain", "Examples.Adder", "Adder1", False)
     print(f"Component created: component identifier is {addasuMeta.getLabel(add1)}")
 except ComponentException as e:
     print("Exception creating a component:", e) 

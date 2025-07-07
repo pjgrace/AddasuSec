@@ -40,7 +40,8 @@ def role_required(required_role):
                 if payload.get("role") != required_role:
                     raise HTTPForbidden(description=f"{required_role} role required")
                 return func(self, *args, **kwargs)
-                
+            wrapper._is_role_required = True
+            wrapper._required_role = required_role
         return wrapper
     return decorator
 

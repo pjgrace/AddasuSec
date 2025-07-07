@@ -9,6 +9,7 @@ between component interfaces and receptacles.
 Author: Paul Grace  
 License: MIT
 """
+import inspect
 
 class Receptacle:
     """
@@ -30,7 +31,6 @@ class Receptacle:
         """
         self.iid: str = id
         self._Comp = None
-        self.m_connID: int = -1
         self.meta_Data: dict[str, any] = {}
 
     def connect(self, pIUnkSink: object, riid: str) -> bool:
@@ -49,7 +49,7 @@ class Receptacle:
         self._Comp = pIUnkSink
         return True
 
-    def disconnect(self, id: int) -> bool:
+    def disconnect(self) -> bool:
         """
         Disconnect the component if the connection ID matches.
 
@@ -59,10 +59,10 @@ class Receptacle:
         Returns:
             bool: True if the component is successfully disconnected; False otherwise.
         """
-        if id != self.m_connID:
-            return False
-        self._Comp = None
-        return True
+        if self._Comp != None:
+            self._Comp = None
+            return True
+        return False
 
     def putData(self, name: str, value: object) -> None:
         """
