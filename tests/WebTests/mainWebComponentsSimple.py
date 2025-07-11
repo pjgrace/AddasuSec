@@ -2,7 +2,7 @@ from Runtimes.runtime import runtime
 from MetaArchitecture.MetaArchitecture import MetaArchitecture
 from requests.auth import HTTPBasicAuth
 import requests
-import json
+import json, time
 
 # Initialize architecture and runtime
 meta = MetaArchitecture()
@@ -46,10 +46,11 @@ def call_api(endpoint, a, b):
 print("\n🧪 Testing Calculator:")
 call_api("add", 676, 8)
 call_api("sub", 676, 8)
+time.sleep(2)
 
 # Delete the Subber component
 print("\n❌ Deleting 'Subber1' component:")
-opencom.delete("web", "Subber1")
+opencom.delete("web", "Adder1")
 
 # Test subtraction again after deletion
 print("\n🧪 Testing subtraction after component deletion:")
