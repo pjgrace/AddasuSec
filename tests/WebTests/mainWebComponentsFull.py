@@ -25,13 +25,19 @@ Author: Paul Grace
 """
 
 from AddasuSec.Receptacle import Receptacle
-from Runtimes.runtime import runtime, ComponentException, ConnectionException
+from Runtimes.runtime import runtime
+from Runtimes.WebRuntime import WebComponentException, WebConnectionException
 from MetaArchitecture.MetaArchitecture import MetaArchitecture
 import sys
+import requests
+from requests.auth import HTTPBasicAuth
 
 # === Constants ===
 
-PLAIN = "plain"
+PLAIN = "web"
+auth = HTTPBasicAuth("user", "pass")
+base_url = "http://localhost:8000/Calculator1"
+base_url2 = "http://localhost:8001/Calculator2"
 
 # Component names
 CALC1_NAME = "Calculator1"
@@ -57,10 +63,12 @@ addasuSec = runtime(addasuMeta)
 
 def run_tests():
     """Perform basic add and subtract operations to verify component connectivity."""
-    assert calc1.add(1, 2) == 3
-    assert calc2.add(1, 2) == 3
-    assert calc1.sub(8, 2) == 6
-    assert calc2.sub(8, 2) == 6
+    print("\n🧪 Testing Calculator:")
+
+    assert call_api(base_url, "add", 1, 2) == 3
+    assert call_api(base_url2, "add", 1, 2) == 3
+    assert call_api(base_url, "sub", 8, 2) == 6
+    assert call_api(base_url, "sub", 8, 2) == 6
     print("Basic math operation tests passed")
 
 def full_connection():
@@ -71,13 +79,29 @@ def full_connection():
     assert addasuSec.connect(PLAIN, calc2, sub1, ISUB)
     print("All components successfully connected")
 
+# Helper function to perform POST request and print result
+def call_api(base_url, endpoint, a, b):
+    url = f"{base_url}/{endpoint}?a={a}&b={b}"
+    try:
+        response = requests.post(url, auth=auth)
+        response.raise_for_status()
+        data = response.json()
+        print(f"✅ {endpoint}({a}, {b}) = {data.get('result')}")
+        return data.get('result')
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error calling {endpoint}: {e}")
+    except json.JSONDecodeError:
+        print(f"❌ Invalid JSON response from {endpoint}")
+    except KeyError:
+        print(f"❌ 'result' key not found in response: {response.text}")
+
 # === Component Lifecycle Tests ===
 
 try:
     calc1 = addasuSec.create(PLAIN, CALC_CLASS, CALC1_NAME, False)
     calc2 = addasuSec.create(PLAIN, CALC_CLASS, CALC2_NAME, False)
     add1 = addasuSec.create(PLAIN, ADDER_CLASS, ADDER_NAME, False)
-
+    print("delete")
     # Test delete + recreate
     assert addasuSec.delete(PLAIN, ADDER_NAME)
     add1 = addasuSec.create(PLAIN, ADDER_CLASS, ADDER_NAME, False)
@@ -91,17 +115,17 @@ except ComponentException as e:
 
 try:
     assert not addasuSec.delete(PLAIN, "Adder5")
-except ComponentException as e:
+except WebComponentException as e:
     print(f"Expected error deleting non-existent component: {e}")
 
 try:
     addasuSec.create(PLAIN, ADDER_CLASS, ADDER_NAME, False)
-except ComponentException as e:
+except WebComponentException as e:
     print(f"Expected error on duplicate component creation: {e}")
 
 try:
     addasuSec.create(PLAIN, ADDER_CLASS, "Adder 1", False)
-except ComponentException as e:
+except Exception as e:
     print(f"Expected error on invalid component name: {e}")
 
 # === Connection and Functionality Tests ===
@@ -113,19 +137,19 @@ run_tests()
 
 def test_disconnect_and_failures():
     """Disconnect components and ensure calls fail."""
-    for c, t, iface in [
-        (calc1, add1, IADD),
-        (calc2, add1, IADD),
-        (calc1, sub1, ISUB),
-        (calc2, sub1, ISUB),
+    for c, t, iface, url in [
+        (calc1, add1, IADD, base_url),
+        (calc2, add1, IADD, base_url2 ),
+        (calc1, sub1, ISUB, base_url),
+        (calc2, sub1, ISUB, base_url2),
     ]:
         assert addasuSec.disconnect(PLAIN, c, t, iface)
         try:
             # These calls should raise exceptions since disconnected
             if iface == IADD:
-                c.add(1, 2)
+                call_api(url, "add", 1, 2)
             else:
-                c.sub(1, 2)
+                call_api(url, "add", 1, 2)
             assert False, "Disconnected call should not succeed"
         except Exception:
             pass

@@ -42,6 +42,8 @@ class ComponentRuntime():
         src_label = self.meta.getLabel(component_src);
         sink_label = self.meta.getLabel(component_intf);
         self.meta.removeEdge(src_label, sink_label, intf_type)
+        if isinstance(component_src, str):
+            component_src = self.meta.getComponent(component_src)
         return component_src.disconnect(intf_type)
     
     # CREATE - Plain component in the address space
@@ -76,3 +78,7 @@ class ComponentRuntime():
     # DELETE - Plain component in the address space
     def delete(self, component_id):
         return self.meta.removeNode(component_id)
+    
+    def start(self, component_id):
+        comp = self.meta.getComponent(component_id)
+        return comp.start()

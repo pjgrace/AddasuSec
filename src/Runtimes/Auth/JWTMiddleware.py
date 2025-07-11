@@ -6,6 +6,7 @@ class JWTAuthMiddleware:
     def process_request(self, req, resp):
         # Expect token in Authorization header: Bearer <token>
         auth_header = req.get_header("Authorization")
+        print(auth_header)
         if auth_header is None or not auth_header.startswith("Bearer "):
             raise falcon.HTTPUnauthorized(
                 description="Missing or invalid Authorization header",
@@ -23,4 +24,4 @@ class JWTAuthMiddleware:
             "user_id": payload["sub"],
             "role": payload["role"]
         }
- 
+        print(req.context.user)

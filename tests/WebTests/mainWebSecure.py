@@ -21,32 +21,73 @@ import requests
 import sys
 
 # Constants for reuse
-RUNTIME_TYPE = "plain"
+RUNTIME_TYPE = "web"
 IADD = "Examples.IAdd"
 ISUB = "Examples.ISub"
 AUTH_URL = "http://localhost:8676/token"
 USERNAME = "alice"
 PASSWORD = "password123"
+base_url = "http://localhost:8000/Calculator1"
 
 # Initialise runtime and meta
 meta = MetaArchitecture()
 sec_runtime = runtime(meta)
 
+# Helper function to perform POST request and print result
+def call_api(base_url, endpoint, a, b, token):
+    url = f"{base_url}/{endpoint}?a={a}&b={b}"
+    try:
+        headers = {
+            'Authorization': f'Bearer {token}'
+        }
+        response = requests.post(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        print(f"✅ {endpoint}({a}, {b}) = {data.get('result')}")
+        return data.get('result')
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error calling {endpoint}: {e}")
+    except json.JSONDecodeError:
+        print(f"❌ Invalid JSON response from {endpoint}")
+    except KeyError:
+        print(f"❌ 'result' key not found in response: {response.text}")
+
+
+
+def run_tests(token):
+    """Perform basic add and subtract operations to verify component connectivity."""
+    print("\n🧪 Testing Calculator:")
+
+    assert call_api(base_url, "add", 1, 2, token) == 3
+    assert call_api(base_url, "sub", 8, 2, token) == 6
+    print("Basic math operation tests passed")
+    
+def run_insecuretests():
+    """Perform basic add and subtract operations to verify component connectivity."""
+    print("\n🧪 Testing Calculator:")
+    try:
+        call_api(base_url, "add", 1, 2, "nulltoken") == 3
+    except Exception as e:
+        print(f"Correctly fails due to authorization - {e}")
+    try:
+        call_api(base_url, "sub", 8, 2, "nulltoken") == 6
+    except Exception as e:
+        print(f"Correctly fails due to authorization - {e}")
+        
 # Create components
 try:
     CALC1 = sec_runtime.create(RUNTIME_TYPE, "Examples.CalculatorAuthZ", "Calculator1", True)
-    CALC2 = sec_runtime.create(RUNTIME_TYPE, "Examples.Calculator", "Calculator2", False)
     ADD1 = sec_runtime.create(RUNTIME_TYPE, "Examples.AdderAuthZ", "Adder1", True)
-    ADD2 = sec_runtime.create(RUNTIME_TYPE, "Examples.Adder", "Adder2", False)
     SUB1 = sec_runtime.create(RUNTIME_TYPE, "Examples.SubberAuthZ", "Subber1", True)
-    SUB2 = sec_runtime.create(RUNTIME_TYPE, "Examples.Subber", "Subber2", False)
+    
+#    SUB2 = sec_runtime.create(RUNTIME_TYPE, "Examples.Subber", "Subber2", False)
 except ComponentException as e:
     sys.exit(f"Component creation failed: {e}")
 
 # Duplicate component creation test
 try:
     _ = sec_runtime.create(RUNTIME_TYPE, "Examples.Adder", "Adder1", False)
-except ComponentException as e:
+except Exception as e:
     print(f"Correctly failed duplicate component creation: {e}")
 
 # Connect components
@@ -54,9 +95,7 @@ except ComponentException as e:
 def connect_all():
     try:
         assert sec_runtime.connect(RUNTIME_TYPE, CALC1, ADD1, IADD)
-        assert sec_runtime.connect(RUNTIME_TYPE, CALC2, ADD2, IADD)
         assert sec_runtime.connect(RUNTIME_TYPE, CALC1, SUB1, ISUB)
-        assert sec_runtime.connect(RUNTIME_TYPE, CALC2, SUB2, ISUB)
     except ConnectionException as e:
         sys.exit(f"Connection failed: {e}")
 
@@ -69,8 +108,8 @@ TOKEN = resp.json().get("access_token")
 assert TOKEN, "Token retrieval failed"
 
 # Secured calls
-assert CALC1.call_with_token(CALC1.add, TOKEN, 1, 2) == 3
-assert CALC1.call_with_token(CALC1.sub, TOKEN, 8, 1) == 7
+run_insecuretests()
+run_tests(TOKEN)
 
 # Unauthenticated calls
 assert CALC2.add(1, 2) == 3

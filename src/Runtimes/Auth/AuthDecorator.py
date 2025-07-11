@@ -27,6 +27,7 @@ def role_required(required_role):
         def wrapper(self, req, *args, **kwargs):
             if isinstance(req, falcon.Request):
                 user = getattr(req.context, "user", None)
+                print(f"user is {user}")
                 if not user:
                     raise HTTPUnauthorized(description="Authentication required")
                 if user.get("role") != required_role:
