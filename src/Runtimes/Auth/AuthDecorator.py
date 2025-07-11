@@ -25,6 +25,8 @@ def role_required(required_role):
     def decorator(func):
         @wraps(func)
         def wrapper(self, req, *args, **kwargs):
+            print(f"[DEBUG] Entered wrapper of {func.__qualname__}")
+
             if isinstance(req, falcon.Request):
                 user = getattr(req.context, "user", None)
                 print(f"user is {user}")

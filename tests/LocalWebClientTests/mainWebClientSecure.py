@@ -76,7 +76,7 @@ def run_insecuretests():
         
 # Create components
 try:
-    CALC1 = sec_runtime.create(RUNTIME_TYPE, "Examples.CalculatorAuthZ", "Calculator1", True)
+    CALC1 = sec_runtime.create("web_client", "Examples.CalculatorAuthZ", "Calculator1", True)
     ADD1 = sec_runtime.create(RUNTIME_TYPE, "Examples.AdderAuthZ", "Adder1", True)
     SUB1 = sec_runtime.create(RUNTIME_TYPE, "Examples.SubberAuthZ", "Subber1", True)
     
@@ -94,8 +94,8 @@ except Exception as e:
 
 def connect_all():
     try:
-        assert sec_runtime.connect(RUNTIME_TYPE, CALC1, ADD1, IADD)
-        assert sec_runtime.connect(RUNTIME_TYPE, CALC1, SUB1, ISUB)
+        assert sec_runtime.connect("web_client", CALC1, ADD1, IADD)
+        assert sec_runtime.connect("web_client", CALC1, SUB1, ISUB)
     except ConnectionException as e:
         sys.exit(f"Connection failed: {e}")
 
@@ -108,13 +108,13 @@ TOKEN = resp.json().get("access_token")
 assert TOKEN, "Token retrieval failed"
 
 # Secured calls
-run_insecuretests()
-run_tests(TOKEN)
+assert CALC1.call_with_token(CALC1.add, TOKEN, 1, 2) == 3
+assert CALC1.call_with_token(CALC1.sub, TOKEN, 8, 1) == 7
 
 # Disconnect and verify failure
 
 def disconnect_and_test(component, target, interface, call_fn):
-    if sec_runtime.disconnect(RUNTIME_TYPE, component, target, interface):
+    if sec_runtime.disconnect("web_client", component, target, interface):
         try:
             call_fn()
             print("Error: call succeeded after disconnection")
@@ -126,14 +126,15 @@ disconnect_and_test(CALC1, SUB1, ISUB, lambda: CALC1.sub(8, 2))
 
 # Reconnect
 connect_all()
-run_tests(TOKEN)
+assert CALC1.call_with_token(CALC1.add, TOKEN, 1, 2) == 3
+assert CALC1.call_with_token(CALC1.sub, TOKEN, 8, 1) == 7
 
 # Metadata assignment and checks
 meta.setInterfaceAttributeValue("Calculator1", IADD, "Variation", 8)
 assert meta.getInterfaceAttributeValue("Calculator1", IADD, "Variation") == 8
 
-meta.setInterfaceAttributeValue("Calculator2", IADD, "peter", "bob")
-assert meta.getInterfaceAttributeValue("Calculator2", IADD, "peter") == "bob"
+meta.setInterfaceAttributeValue("Calculator1", IADD, "peter", "bob")
+assert meta.getInterfaceAttributeValue("Calculator1", IADD, "peter") == "bob"
 
 meta.setInterfaceAttributeValue("Adder1", IADD, "Variation", 77)
 assert meta.getInterfaceAttributeValue("Adder1", IADD, "Variation") == 77

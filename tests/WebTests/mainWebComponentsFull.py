@@ -108,7 +108,7 @@ try:
 
     sub1 = addasuSec.create(PLAIN, SUBBER_CLASS, SUBBER_NAME, False)
 
-except ComponentException as e:
+except WebComponentException as e:
     sys.exit(f"Component creation failed: {e}")
 
 # === Invalid Creation and Deletion Tests ===

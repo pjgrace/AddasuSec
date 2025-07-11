@@ -127,7 +127,14 @@ class WebReceptacle:
         print("Previous call's arguments:", prev_args)
     
         req = prev_args['req']
-        token = req.get_header("Authorization")
+        token =  None
+        if hasattr(req, "get_header") and callable(req.get_header):
+            auth_header = req.get_header("Authorization", default=None)
+            auth_header and auth_header.lower().startswith("bearer ")
+            token = auth_header[7:]  # Remove "Bearer " prefix
+        else:
+            token = req
+
         nameA = inspect.stack()[1].function
         self.url += nameA
         
@@ -160,7 +167,7 @@ class WebReceptacle:
         extracted_value = None
         for key, value in y.items():
             if isinstance(value, return_annotation):
-                extacted_value = value
+                extracted_value = value
                 print(f"Matched key: {key}, Value: {value}")
                 break
             

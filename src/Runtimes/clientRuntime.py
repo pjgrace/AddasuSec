@@ -14,7 +14,7 @@ class clientRuntime():
         self.meta = meta
 
     def connect(self, component_src, component_intf, intf_type):
-        src_label = self.meta.getLabel(component_src);
+        src_label = self.meta.getLabel(component_src.getWrapper());
         sink_label = self.meta.getLabel(component_intf);
         self.meta.addEdge(src_label, sink_label, intf_type)
         
@@ -56,7 +56,7 @@ class clientRuntime():
         class_ = getattr(module2, module.rsplit('.', 1)[-1])
         instance = class_(component)
         distributedComponent = WebClientComponent.WebClientComponent(instance)
-        self.meta.addNode(component, instance)
+        self.meta.addNode(component, distributedComponent)
         instance.setWrapper(distributedComponent)
         
         all_interfaces = list((inspect.getmro(class_)))
@@ -73,6 +73,18 @@ class clientRuntime():
     def delete(self, component_id):
       self.meta.removeNode(component_id)
 
+    # DISCONNECT - Two Component in same address space
+    def disconnect(self, component_src, component_intf, intf_type):
+        src_label = self.meta.getLabel(component_src.getWrapper());
+        sink_label = self.meta.getLabel(component_intf);
+        self.meta.removeEdge(src_label, sink_label, intf_type)
+        try:
+            if isinstance(component_src, str):
+                component_src = self.meta.getComponent(component_src)
+                
+            return component_src.getWrapper().disconnect(intf_type)
+        except Exception as e:
+            raise Exception(f"Receptable-Interface connection failed - {e}")
     
 
     

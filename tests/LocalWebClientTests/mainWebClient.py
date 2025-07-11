@@ -5,12 +5,15 @@ from MetaArchitecture.MetaArchitecture import MetaArchitecture
 meta = MetaArchitecture()
 opencom = runtime(meta)
 #receptacles = {"IAdd": Receptacle("IAdd"), "ISub": Receptacle("ISub")}
-x = opencom.create("web_client", "Examples.Calculator", "Calculator1")
-y = opencom.create("web", "Examples.Adder", "Adder1")
+x = opencom.create("web_client", "Examples.Calculator", "Calculator1", False)
+y = opencom.create("web", "Examples.Adder", "Adder1", False)
+z = opencom.create("web", "Examples.Subber", "Subber1", False)
 
 print(opencom.connect("web_client", x,y,"Examples.IAdd"))
+print(opencom.connect("web_client", x,z,"Examples.ISub"))
 
 print(x.add(1, 2))
+print(x.sub(1, 2))
 
 meta.setInterfaceAttributeValue("Calculator1", "Examples.IAdd",  "Variation", 8)
 print(meta.getInterfaceAttributeValue("Calculator1", "Examples.IAdd",  "Variation"))        

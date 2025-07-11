@@ -5,12 +5,15 @@ from MetaArchitecture.MetaArchitecture import MetaArchitecture
 addasuMeta = MetaArchitecture()
 addasuSec = runtime(addasuMeta)
 #receptacles = {"IAdd": Receptacle("IAdd"), "ISub": Receptacle("ISub")}
-x = addasuSec.create("web_client", "Examples.Calculator", "Calculator1")
-y = addasuSec.remoteCreate("http://localhost:8654","web", "Examples.Adder", "Adder1")
+x = addasuSec.create("web_client", "Examples.Calculator", "Calculator1", False)
+y = addasuSec.remoteCreate("http://localhost:8654","web", "Examples.Adder", "Adder1", False)
+z = addasuSec.remoteCreate("http://localhost:8654","web", "Examples.Subber", "Subber1", False)
 
 print(addasuSec.connect("web_client", x,y,"Examples.IAdd"))
+print(addasuSec.connect("web_client", x,z,"Examples.ISub"))
 
 print(x.add(1, 2))
+print(x.sub(1, 2))
 
 addasuMeta.setInterfaceAttributeValue("Calculator1", "Examples.IAdd",  "Variation", 8)
 print(addasuMeta.getInterfaceAttributeValue("Calculator1", "Examples.IAdd",  "Variation"))        

@@ -8,6 +8,8 @@ from AddasuSec import WebReceptacle
 from Runtimes.Auth.JWTMiddleware import JWTAuthMiddleware
 import threading
 from waitress import serve
+
+from wsgiref.simple_server import make_server
 import requests
 import time
 
@@ -20,8 +22,12 @@ class ServerThread(threading.Thread):
     
         def run(self):
             print(f"Serving on http://127.0.0.1:{self.port}")
-            serve(self.app, host='127.0.0.1', port=self.port, threads=3)
-    
+            with make_server('', self.port, self.app) as self.httpd:
+
+                # Serve until process is killed
+                self.httpd.serve_forever()
+            
+            
         def stop(self):
             if self.httpd:
                 print("Shutting down server...")

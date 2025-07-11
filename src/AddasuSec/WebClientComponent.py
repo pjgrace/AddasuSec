@@ -23,6 +23,9 @@ class WebClientComponent:
         rp = self.receptacles.get(r_type)
         return rp._Comp
     
+    def call_with_token(self, func, token, *args, **kwargs):
+        print(f"Calling {func.__name__} with token: {token}")
+        return func(token, *args, **kwargs)
     
     def connect(self, component, intf, rt):
         try:
@@ -32,7 +35,7 @@ class WebClientComponent:
 
     def disconnect(self, intf):
         try:
-            return self.receptacles.get(intf).disconnect()
+            return self.innerComponent.receptacles.get(intf).disconnect(intf)
         except ValueError:
             return False
         
