@@ -9,6 +9,6 @@ class AdderAuthZ(Component, IAdd):
 
     @role_required('admin')
     def add(self, a: int, b: int) -> int:
-        return a + b + 52
+        return a + b 
 
   

@@ -16,6 +16,6 @@ class CalculatorAuthZ(Component, ICalculate):
         return adder.receptacle_with_token(adder.add, a, b)
     
     @role_required('admin')
-    def sub(self, a, b):
+    def sub(self, a: int, b: int) -> int:
         subber = self.getReceptacle(self.receptacle2_type)
         return subber.receptacle_with_token(subber.sub, a, b)

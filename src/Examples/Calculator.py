@@ -13,7 +13,7 @@ class Calculator(Component, ICalculate):
         adder = self.getReceptacle(self.receptacle1_type)
         return adder.add(a,b)
     
-    def sub(self, a, b):
+    def sub(self, a: int, b: int) -> int:
         return self.getReceptacle(self.receptacle2_type).sub(a,b)
 
 

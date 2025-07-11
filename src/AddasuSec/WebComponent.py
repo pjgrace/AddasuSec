@@ -1,34 +1,80 @@
 import falcon
 import inspect
+import asyncio
 import datetime
 import uuid
 import json
 from AddasuSec import WebReceptacle
-from networkx.generators.tests.test_small import null
+from Runtimes.Auth.JWTMiddleware import JWTAuthMiddleware
+import threading
+from waitress import serve
+import requests
+import time
+
+class ServerThread(threading.Thread):
+        def __init__(self, app, port):
+            super().__init__()
+            self.app = app
+            self.port = port
+            self.httpd = None
+    
+        def run(self):
+            print(f"Serving on http://127.0.0.1:{self.port}")
+            serve(self.app, host='127.0.0.1', port=self.port, threads=3)
+    
+        def stop(self):
+            if self.httpd:
+                print("Shutting down server...")
+                self.httpd.shutdown()
+                # Send dummy request to unblock server (force it to wake)
+                try:
+                    requests.get(f'http://localhost:{self.port}/__shutdown__')
+                except Exception:
+                    pass  # Ignore any error from the dummy request
 
 class WebComponent:
 
-    innerComponent = null
+    innerComponent = None
     receptacles = {}
-    secure=False
     
-    def __init__(self, component):
+    def __init__(self, component, secure):
         self.innerComponent = component
         for item in component.receptacles:
             rcp = WebReceptacle.WebReceptacle(item)
             self.innerComponent.receptacles[item] = rcp
-            
+        
+        self.dynamic_routes = {}
+        if secure:
+            jwt_middleware = JWTAuthMiddleware()
+            self.app = falcon.App(middleware=[jwt_middleware])
+        else:
+            self.app = falcon.App()
+
+        
+    def add_route(self, path, resource):
+        self.dynamic_routes[path] = resource
+        self.app.add_route(path, resource)
+
+    def remove_route(self, path):
+        self.dynamic_routes.pop(path, None)
+        
     def call_and_serialize(self, method, *args, **kwargs):
         result = method(*args, **kwargs)
         return json.dumps(result)
     
-    def on_get(self, req: falcon.Request, resp: falcon.Response) -> None:
-        resp.media = {
-            'quote': "I've always been more interested in the future than in the past.",
-            'author': 'Grace Hopper',
-        }
-        
-    def on_post(self, req, resp):
+    def startThreadedServer(self, port):
+        self.port = port
+        self.server = ServerThread(self.app, port)
+        self.server.start()
+        time.sleep(2)
+                
+    def stopThreadedServer(self):
+        self.server.stop()  # Trigger graceful shutdown
+        self.server.join()  # Wait for thread to finish
+        print("Done.")
+
+    def on_postt(self, req, resp):
+       
         nm= req.path.rpartition('/')[-1]
         methods = [attr for attr in dir(self.innerComponent) if callable(getattr(self.innerComponent, attr)) and not attr.startswith("__")]
         print("Available methods:", methods)
@@ -48,9 +94,16 @@ class WebComponent:
                 print(f"  {name}: {annotation_str}")
                 args.append(self.get_typed_param(req, name, annotation_str))
             # Dynamically invoke the method with arguments
-            result = method(*args)
+                
+            if inspect.iscoroutinefunction(method):
+                result = asyncio.run(method(req, *args))
+            else:
+                try:
+                    result = method(req, *args)
+                except Exception as e:
+                    result = method(*args)
+                    
             print(f"Result of calling {nm}: {result}")
-            return_annotation = sig.return_annotation
         else:
             print(f"Method '{nm}' not found.")
             description = (
@@ -63,16 +116,51 @@ class WebComponent:
                 title='Service Outage', description=description, retry_after=30
             )
 
-        # NOTE: Normally you would use resp.media for this sort of thing;
-        # this example serves only to demonstrate how the context can be
-        # used to pass arbitrary values between middleware components,
-        # hooks, and resources.
-        
-        resp.media = {f'{sig.return_annotation}': result}
 
-        resp.set_header('Powered-By', 'Falcon')
-        resp.status = falcon.HTTP_200
-        print(resp)
+    def on_post(self, req, resp):
+        print("USER FROM CONTEXT:", getattr(req.context, "user", None))
+        nm = req.path.rpartition('/')[-1]
+        methods = [attr for attr in dir(self.innerComponent)
+                   if callable(getattr(self.innerComponent, attr)) and not attr.startswith("__")]
+        print("Available methods:", methods)
+    
+        if nm in methods:
+            method = getattr(self.innerComponent, nm)
+            sig = inspect.signature(method)
+            args = []
+    
+            for name, param in sig.parameters.items():
+                annotation = param.annotation
+                annotation_str = annotation if annotation != inspect._empty else "No type annotation"
+                print(f"  {name}: {annotation_str}")
+                args.append(self.get_typed_param(req, name, annotation_str))
+            
+            if inspect.iscoroutinefunction(method):
+                result = asyncio.run(method(req, *args))
+            else:
+                try:
+                    result = method(req, *args)
+                except Exception as e:
+                    result = method(*args)
+            
+            print(f"Result of calling {nm}: {result}")
+            return_annotation = sig.return_annotation
+    
+            # ✅ Clean response
+            resp.media = {"result": result}
+            resp.set_header('Powered-By', 'Falcon')
+            resp.status = falcon.HTTP_200
+    
+        else:
+            print(f"Method '{nm}' not found.")
+            description = (
+                'The method called is not implemented on the component.'
+            )
+    
+            raise falcon.HTTPServiceUnavailable(
+                title='Service Outage', description=description, retry_after=30
+            )
+
         
     def get_typed_param(self, req: falcon.Request, name: str, param_type: type):
         """
@@ -118,5 +206,30 @@ class WebComponent:
         except ValueError:
             return False
         
-    def setSecure(self, value):
-        self.secure = value
+    def disconnect(self, component, intf, rt):
+        try:
+            return self.innerComponent.receptacles.get(intf).disconnect(intf)
+        except ValueError:
+            return False
+    
+    
+    def start(self):
+        """
+        Start the component. This is a stub meant to be overridden.
+
+        Args:
+            param (any): Parameter used during startup.
+
+        Returns:
+            bool: True if started successfully.
+        """
+        return True
+
+    def stop(self):
+        """
+        Stop the component. This is a stub meant to be overridden.
+
+        Returns:
+            bool: True if stopped successfully.
+        """
+        return True

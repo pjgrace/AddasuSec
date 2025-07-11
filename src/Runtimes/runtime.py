@@ -1,6 +1,6 @@
 from Runtimes.ComponentRuntime import ComponentRuntime, PlainComponentException,\
     PlainConnectionException
-from Runtimes.rpcRuntime import rpcRuntime
+from Runtimes.WebRuntime import WebRuntime
 from Runtimes.clientRuntime import clientRuntime
 from Runtimes.serverRuntime import serverRuntime
 from AddasuSec import Component
@@ -21,7 +21,7 @@ class runtime():
     def __init__(self, meta):
         self.meta = meta
         self.plainRuntime = ComponentRuntime(meta)
-        self.webRuntime = rpcRuntime(meta)
+        self.webRuntime = WebRuntime(meta)
         self.clientRuntime = clientRuntime(meta)
         self.serverRuntime = serverRuntime(meta)
     
@@ -34,7 +34,32 @@ class runtime():
     
         return func(prev_args['req'], *args, **kwargs)
     
-     # CONNECT - Two Component in same address space.
+    def start(self, type, component):
+        match type:
+            case "plain":
+                try:
+                    return self.plainRuntime.start(component)
+                except PlainConnectionException as e:
+                    raise ConnectionException(e)
+            case 'web':
+                return self.webRuntime.start(component)
+            case 'web_client':
+                return None
+            case 'web_server':
+                return None
+            case _:
+                raise ConnectionException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
+
+    def remoteStart(self, url, type_, component_id):
+        resp = requests.post(f"{url}/start", json={
+            "type": type_,
+            "component_id": component_id
+        })
+        print(resp.json())
+        reply = json.loads(resp.text)
+        return reply["result"]
+
+    # CONNECT - Two Component in same address space.
     
     # This is the connect of two local address space components
     # The causal connection updates the global meta model with the
@@ -43,6 +68,10 @@ class runtime():
         match type:
             case "plain":
                 try:
+                    if isinstance(component_src, str):
+                        component_src = self.meta.getComponent(component_src)
+                    if isinstance(component_intf, str):
+                        component_intf = self.meta.getComponent(component_intf)
                     return self.plainRuntime.connect(component_src, component_intf, intf_type)
                 except PlainConnectionException as e:
                     raise ConnectionException(e)
@@ -69,9 +98,33 @@ class runtime():
                 return self.serverRuntime.disconnect(component_src, component_intf, intf_type)
             case _:
                 raise ConnectionException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
-
     
+    def remoteDisconnect(self, url, runtimeType:str, component_src:str, component_intf:str, intf_type:str) -> bool:
+        src_label = self.meta.getLabel(component_src);
+        if src_label is None:
+            raise PlainConnectionException("Source component does not exist")
+        sink_label = self.meta.getLabel(component_intf);
+        if sink_label is None:
+            raise PlainConnectionException("Sink component does not exist")
+        self.meta.removeEdge(src_label, sink_label, intf_type)
+        try:
+            self.disconnect_components(url, runtimeType, component_src, component_intf, intf_type)
+            return True 
+                
+        except Exception as e:
+            raise PlainConnectionException(f"Receptable-Interface connection failed - {e}")
 
+    def disconnect_components(self, url, type_, src, intf, intf_type):
+        resp = requests.post(f"{url}/disconnect", json={
+            "type": type_,
+            "component_src": src,
+            "component_intf": intf,
+            "intf_type": intf_type
+        })
+        print(resp.json())
+        reply = json.loads(resp.text)
+        return reply["result"]
+    
     # CREATE - Plain Component in the address space
     def create(self, runtimeType:str, moduleType: str, componentName: str, secure:bool) -> Component:
         if not componentName.isalnum():
@@ -84,7 +137,7 @@ class runtime():
                     raise ComponentException(e) 
 
             case 'web':
-                return self.webRuntime.create(moduleType, componentName)
+                return self.webRuntime.create(moduleType, componentName, secure)
             case 'web_client':
                 return self.clientRuntime.create(moduleType, componentName)
             case 'web_server':
@@ -101,6 +154,20 @@ class runtime():
         except Exception as e:
             raise ComponentException("Incorrect runtimeType set, must be {plain, web, web_client, or web_server") 
 
+    def remoteConnect(self, url, runtimeType:str, component_src:str, component_intf:str, intf_type:str) -> bool:
+        src_label = self.meta.getLabel(component_src);
+        if src_label is None:
+            raise PlainConnectionException("Source component does not exist")
+        sink_label = self.meta.getLabel(component_intf);
+        if sink_label is None:
+            raise PlainConnectionException("Sink component does not exist")
+        self.meta.addEdge(src_label, sink_label, intf_type)
+        try:
+            self.remoteHTTPConnect(url, runtimeType, component_src, component_intf, intf_type)
+            return True 
+                
+        except Exception as e:
+            raise PlainConnectionException(f"Receptable-Interface connection failed - {e}")
 
     # DELETE - Plain component in the address space
     def delete(self, type, component_id):
@@ -151,7 +218,7 @@ class runtime():
         reply = json.loads(resp.text)
         return reply["result"]
 
-    def remoteConnect(self, url, type_, src, intf, intf_type):
+    def remoteHTTPConnect(self, url, type_, src, intf, intf_type):
         resp = requests.post(f"{url}/connect", json={
             "type": type_,
             "component_src": src,
@@ -160,14 +227,7 @@ class runtime():
         })
         print(resp.json())
 
-    def disconnect_components(self, url, type_, src, intf, intf_type):
-        resp = requests.post(f"{url}/disconnect", json={
-            "type": type_,
-            "component_src": src,
-            "component_intf": intf,
-            "intf_type": intf_type
-        })
-        print(resp.json())
+
         
     def removeE(self, all_interfaces, toRemove):
         for index in all_interfaces:

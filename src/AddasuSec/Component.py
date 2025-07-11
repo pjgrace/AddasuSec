@@ -138,7 +138,7 @@ class Component():
     def setSecure(self, value):
         self.secure = value
     
-    def start(self, param):
+    def start(self):
         """
         Start the component. This is a stub meant to be overridden.
 

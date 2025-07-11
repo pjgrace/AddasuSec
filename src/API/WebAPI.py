@@ -6,6 +6,18 @@ from MetaArchitecture.MetaArchitecture import MetaArchitecture  # Assume it's av
 meta = MetaArchitecture()
 rt = runtime(meta)
 
+
+class StartComponentResource:
+    def on_post(self, req, resp):
+        data = json.load(req.bounded_stream)
+        type_ = data.get('type')
+        component = data.get('component_id')
+        try:
+            result = rt.start(type_, component)
+            resp.media = {'status': 'created', 'result': result}
+        except Exception as e:
+            resp.media = {'status': 'error in call', 'result': False} 
+            
 class CreateComponentResource:
     def on_post(self, req, resp):
         data = json.load(req.bounded_stream)

@@ -8,6 +8,6 @@ class Adder(Component, IAdd):
       super().__init__({})
 
   def add(self, a: int, b: int) -> int:
-      return a + b + 52
+      return a + b
 
   

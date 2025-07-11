@@ -104,7 +104,7 @@ class WebReceptacle:
         return True
 
     def disconnect(self, iden):
-        if(iden!=self.m_connID):
+        if(iden!=self.iid):
             return False
         self._Comp = None
         return True
@@ -117,4 +117,58 @@ class WebReceptacle:
 
     def getValues(self):
         return self.meta_Data.keys
+    
+    def receptacle_with_token(self, func, *args, **kwargs):
+        stack = inspect.stack()
+        print(func)
+        previous_frame = stack[2].frame
+        # Get local variables (including parameters) from that frame
+        prev_args = previous_frame.f_locals
+        print("Previous call's arguments:", prev_args)
+    
+        req = prev_args['req']
+        token = req.get_header("Authorization")
+        nameA = inspect.stack()[1].function
+        self.url += nameA
         
+        sig = self.get_method_signature_from_class_name(self.iid, nameA)
+        return_annotation = sig.return_annotation
+        print("Return type from signature:", return_annotation)
+            
+        if sig.parameters:
+            self.url += '?'
+        i=0;
+        for name, param in sig.parameters.items():
+            if not name=="self":
+                annotation = param.annotation
+                    # If no annotation, will be inspect._empty
+                annotation_str = annotation if annotation != inspect._empty else "No type annotation"
+                print(f"  {name}: {annotation_str}")
+                self.url += f"{name}={args[i]}&"
+                i+=1
+                    
+        if i>0:
+            self.url = self.url[:-1]
+                
+        headers = {
+            'Authorization': f'Bearer {token}'
+        }
+        response = requests.post(self.url, headers=headers)
+
+        y = json.loads(response.text)
+            
+        extracted_value = None
+        for key, value in y.items():
+            if isinstance(value, return_annotation):
+                extacted_value = value
+                print(f"Matched key: {key}, Value: {value}")
+                break
+            
+        if extracted_value is None:
+            print("No matching value found.")
+
+        # the result is a Python dictionary:
+        #return y["sum"]            
+        return extracted_value
+    
+    
