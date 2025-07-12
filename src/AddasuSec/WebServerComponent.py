@@ -79,7 +79,7 @@ class WebServerComponent:
         # this example serves only to demonstrate how the context can be
         # used to pass arbitrary values between middleware components,
         # hooks, and resources.
-        resp.media = {'sum': result}
+        resp.media = {'result': result}
 
         resp.set_header('Powered-By', 'Falcon')
         resp.status = falcon.HTTP_200
@@ -126,6 +126,21 @@ class WebServerComponent:
     def connect(self, component, intf):
         try:
             return self.innerComponent.receptacles.get(intf).connect(component, intf)
+        except ValueError:
+            return False
+        
+    def disconnect(self, intf):
+        """
+        Disconnect a component from one of this component's receptacles.
+
+        Args:
+            intf (str): The interface/receptacle name.
+
+        Returns:
+            bool: True if disconnected successfully, False otherwise.
+        """
+        try:
+            return self.innerComponent.receptacles.get(intf).disconnect()
         except ValueError:
             return False
     

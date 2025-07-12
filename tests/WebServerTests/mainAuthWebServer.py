@@ -7,9 +7,12 @@ from MetaArchitecture.MetaArchitecture import MetaArchitecture
 meta = MetaArchitecture()
 opencom = runtime(meta)
 #receptacles = {"IAdd": Receptacle("IAdd"), "ISub": Receptacle("ISub")}
-x = opencom.create("web_server", "Examples.CalculatorAuthZ", "Calculator1", True)
+x = opencom.create("web_server", "Examples.CalculatorAuthZ", "Calculator1", false)
+y = opencom.create("plain", "Examples.Adder", "Adder1", False)
 y = opencom.create("plain", "Examples.Adder", "Adder1", False)
 
+
+print(opencom.connect("web_server", x,y,"Examples.IAdd"))
 print(opencom.connect("web_server", x,y,"Examples.IAdd"))
 
 # Step 1: Obtain token from Auth Server
