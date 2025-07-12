@@ -45,7 +45,18 @@ class serverRuntime():
         src_label = self.meta.getLabel(component_src);
         sink_label = self.meta.getLabel(component_intf);
         self.meta.addEdge(src_label, sink_label, intf_type)
+        if isinstance(component_src, str):
+            component_src = self.meta.getComponent(component_src)
         return component_src.connect(component_intf, intf_type)
+    
+    # DISCONNECT - Two Component in same address space
+    def disconnect(self, component_src, component_intf, intf_type):
+        src_label = self.meta.getLabel(component_src);
+        sink_label = self.meta.getLabel(component_intf);
+        self.meta.removeEdge(src_label, sink_label, intf_type)
+        if isinstance(component_src, str):
+            component_src = self.meta.getComponent(component_src)
+        return component_src.disconnect(intf_type)
     
     def removeE(self, all_interfaces, toRemove):
         for index in all_interfaces:
