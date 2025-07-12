@@ -132,8 +132,8 @@ run_tests(TOKEN)
 meta.setInterfaceAttributeValue("Calculator1", IADD, "Variation", 8)
 assert meta.getInterfaceAttributeValue("Calculator1", IADD, "Variation") == 8
 
-meta.setInterfaceAttributeValue("Calculator2", IADD, "peter", "bob")
-assert meta.getInterfaceAttributeValue("Calculator2", IADD, "peter") == "bob"
+meta.setInterfaceAttributeValue("Calculator1", IADD, "peter", "bob")
+assert meta.getInterfaceAttributeValue("Calculator1", IADD, "peter") == "bob"
 
 meta.setInterfaceAttributeValue("Adder1", IADD, "Variation", 77)
 assert meta.getInterfaceAttributeValue("Adder1", IADD, "Variation") == 77
@@ -141,8 +141,8 @@ assert meta.getInterfaceAttributeValue("Adder1", IADD, "Variation") == 77
 meta.setInterfaceAttributeValue("Subber1", ISUB, "Variation", 98)
 assert meta.getInterfaceAttributeValue("Subber1", ISUB, "Variation") == 98
 
-meta.setInterfaceAttributeValue("Calculator2", ISUB, "Variation", 87)
-assert meta.getInterfaceAttributeValue("Calculator2", ISUB, "Variation") == 87
+meta.setInterfaceAttributeValue("Calculator1", ISUB, "Variation", 87)
+assert meta.getInterfaceAttributeValue("Calculator1", ISUB, "Variation") == 87
 
 # Inspect connections
 print("Connections to Adder1 IAdd:", meta.connectionsToIntf("Adder1", IADD))
@@ -151,7 +151,7 @@ print("Connections from Calculator1 ISub:", meta.connectionsFromRecp("Calculator
 
 # Inspect interfaces and receptacles
 print("Interfaces:")
-for comp in ["Calculator1", "Calculator2", "Adder1", "Subber1"]:
+for comp in ["Calculator1", "Adder1", "Subber1"]:
     print(f"{comp}: {meta.getInterfaces(comp)}")
 
 print("Receptacles:")
@@ -162,5 +162,5 @@ for comp in ["Calculator1", "Adder1"]:
 
 # List and delete components
 print("All Components:", meta.getAllComponents())
-sec_runtime.delete(RUNTIME_TYPE, "Calculator2")
+sec_runtime.delete(RUNTIME_TYPE, "Calculator1")
 print("After Deletion:", meta.getAllComponents())
