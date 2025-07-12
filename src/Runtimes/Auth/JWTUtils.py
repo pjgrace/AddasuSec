@@ -1,6 +1,6 @@
 
 import jwt
-import datetime
+from datetime import datetime, timezone, timedelta
 import os
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -11,7 +11,7 @@ def create_token(user_id, role, expire_minutes=30):
     payload = {
         "sub": user_id,
         "role": role,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=expire_minutes)
+        "exp": datetime.now(timezone.utc) + datetime.timedelta(minutes=expire_minutes)
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
     return token

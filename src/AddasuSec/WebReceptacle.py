@@ -1,3 +1,21 @@
+"""
+WebReceptacle Module
+
+This module defines the WebReceptacle class, which simulates a networked component connector.
+It supports dynamic method calling over HTTP using method introspection and signature reflection.
+Designed to simulate a remote procedure call pattern by encoding method parameters into a URL.
+
+Classes:
+    WebReceptacle: Represents a remote or proxy receptacle for interacting with web services.
+
+Dependencies:
+    - requests
+    - json
+    - requests.auth.HTTPBasicAuth
+    - inspect
+    - importlib
+"""
+
 import requests
 import json
 from requests.auth import HTTPBasicAuth
@@ -11,66 +29,62 @@ class WebReceptacle:
         self.m_connID = -1
         self.meta_Data = {}
         self.url = 'http://'
-        
+
     def __getattr__(self, nameA):
         def method(*args, **kwargs):
             print(f"Called method: {nameA}")
             print(f"  Positional args: {args}")
             print(f"  Keyword args: {kwargs}")
-            print(f"{nameA} executed")
             self.url += nameA
+
             sig = self.get_method_signature_from_class_name(self.iid, nameA)
             return_annotation = sig.return_annotation
             print("Return type from signature:", return_annotation)
-            
+
             if sig.parameters:
                 self.url += '?'
-            i=0;
+
+            i = 0
             for name, param in sig.parameters.items():
-                if not name=="self":
+                if name != "self":
                     annotation = param.annotation
-                    # If no annotation, will be inspect._empty
                     annotation_str = annotation if annotation != inspect._empty else "No type annotation"
                     print(f"  {name}: {annotation_str}")
                     self.url += f"{name}={args[i]}&"
-                    i+=1
-                    
-            if i>0:
+                    i += 1
+
+            if i > 0:
                 self.url = self.url[:-1]
-                
+
             basic = HTTPBasicAuth('user', 'pass')
+            response = requests.post(self.url, auth=basic)
+            y = json.loads(response.text)
 
-            x = requests.post(self.url, auth=basic)
-
-            y = json.loads(x.text)
-            
             extracted_value = None
             for key, value in y.items():
                 if isinstance(value, return_annotation):
                     extracted_value = value
                     print(f"Matched key: {key}, Value: {value}")
                     break
-            
+
             if extracted_value is None:
                 print("No matching value found.")
 
-            # the result is a Python dictionary:
-            #return y["sum"]            
             return extracted_value
+
         return method
-    
+
     def dynamic_call(self, name: str, *args, **kwargs):
+        """Dynamically calls a method named 'get_<name>' if available."""
         do = f"get_{name}"
         if hasattr(self, do) and callable(getattr(self, do)):
             func = getattr(self, do)
             return func(*args, **kwargs)
 
     def get_method_signature_from_class_name(self, class_name: str, method_name: str):
-        # Locate the class using full path, e.g., 'Examples.IAdd'
-        # Import the module (e.g., 'Examples')
+        """Retrieve the signature of a method from a class using reflection."""
         module = importlib.import_module(class_name)
         classname = class_name.split('.')[-1]
-                # Get the class
         cls = getattr(module, classname, None)
 
         if cls is None:
@@ -78,104 +92,93 @@ class WebReceptacle:
         if not isinstance(cls, type):
             raise TypeError(f"'{class_name}' is not a class. Got: {type(cls)}")
 
-        # Look for method in class __dict__ to bypass descriptor wrappers like @abstractmethod
         raw_method = cls.__dict__.get(method_name, None)
         if raw_method is None:
             raise AttributeError(f"Method '{method_name}' not found directly in class '{class_name}'")
 
-        # Unwrap static method/classmethod if needed
-        if isinstance(raw_method, (staticmethod, classmethod)):
-            func = raw_method.__func__
-        else:
-            func = raw_method
-
-        # Now get signature
-        sig = inspect.signature(func)
-        return sig
+        func = raw_method.__func__ if isinstance(raw_method, (staticmethod, classmethod)) else raw_method
+        return inspect.signature(func)
 
     def connect(self, pIUnkSink, riid, rt):
-        if(riid!=self.iid):
+        """Connects to another component via the provided receptacle interface."""
+        if riid != self.iid:
             return False
+
         self._Comp = self
         compName = rt.meta.getLabel(pIUnkSink)
         self.url += rt.meta.getComponentAttributeValue(compName, "Host") + f"/{compName}/"
-        
-        #xmlrpc.client.ServerProxy("http://localhost:8000")
         return True
 
     def disconnect(self, iden):
-        if(iden!=self.iid):
+        """Disconnects a component based on its identity."""
+        if iden != self.iid:
             return False
         self._Comp = None
         return True
 
     def putData(self, name, value):
+        """Store metadata key-value pair."""
         self.meta_Data.update([name, value])
 
     def getValue(self, name):
+        """Retrieve a value from the stored metadata."""
         return self.meta_Data.get(name)
 
     def getValues(self):
+        """Returns all metadata keys."""
         return self.meta_Data.keys
-    
+
     def receptacle_with_token(self, func, *args, **kwargs):
+        """Performs a token-authenticated method call using context from a previous frame."""
         stack = inspect.stack()
-        print(func)
         previous_frame = stack[2].frame
-        # Get local variables (including parameters) from that frame
         prev_args = previous_frame.f_locals
         print("Previous call's arguments:", prev_args)
-    
+
         req = prev_args['req']
-        token =  None
+        token = None
         if hasattr(req, "get_header") and callable(req.get_header):
             auth_header = req.get_header("Authorization", default=None)
-            auth_header and auth_header.lower().startswith("bearer ")
-            token = auth_header[7:]  # Remove "Bearer " prefix
+            if auth_header and auth_header.lower().startswith("bearer "):
+                token = auth_header[7:]
         else:
             token = req
 
         nameA = inspect.stack()[1].function
         self.url += nameA
-        
+
         sig = self.get_method_signature_from_class_name(self.iid, nameA)
         return_annotation = sig.return_annotation
         print("Return type from signature:", return_annotation)
-            
+
         if sig.parameters:
             self.url += '?'
-        i=0;
+        i = 0
         for name, param in sig.parameters.items():
-            if not name=="self":
+            if name != "self":
                 annotation = param.annotation
-                    # If no annotation, will be inspect._empty
                 annotation_str = annotation if annotation != inspect._empty else "No type annotation"
                 print(f"  {name}: {annotation_str}")
                 self.url += f"{name}={args[i]}&"
-                i+=1
-                    
-        if i>0:
+                i += 1
+
+        if i > 0:
             self.url = self.url[:-1]
-                
+
         headers = {
             'Authorization': f'Bearer {token}'
         }
         response = requests.post(self.url, headers=headers)
-
         y = json.loads(response.text)
-            
+
         extracted_value = None
         for key, value in y.items():
             if isinstance(value, return_annotation):
                 extracted_value = value
                 print(f"Matched key: {key}, Value: {value}")
                 break
-            
+
         if extracted_value is None:
             print("No matching value found.")
 
-        # the result is a Python dictionary:
-        #return y["sum"]            
         return extracted_value
-    
-    

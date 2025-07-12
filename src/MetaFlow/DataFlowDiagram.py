@@ -85,9 +85,9 @@ class DataFlowDiagram:
                     return True
             return False
         
-    def is_external_store(component, label):
+    def is_external_store(self, component, label):
             # Check meta attribute first
-            if meta.getComponentAttributeValue(label, "external_entity_component") is True:
+            if self.meta.getComponentAttributeValue(label, "external_entity_component") is True:
                 return True
             # If not found in meta, check for decorator on any method
             for _, method in inspect.getmembers(component.__class__, predicate=inspect.isfunction):

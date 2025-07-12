@@ -149,7 +149,7 @@ def test_disconnect_and_failures():
             if iface == IADD:
                 call_api(url, "add", 1, 2)
             else:
-                call_api(url, "add", 1, 2)
+                call_api(url, "sub", 41, 2)
             assert False, "Disconnected call should not succeed"
         except Exception:
             pass
