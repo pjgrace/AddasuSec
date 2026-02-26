@@ -1,6 +1,8 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import inspect
+from MetaArchitecture import MetaArchitecture
+
 
 class DataFlowDiagram:
     """

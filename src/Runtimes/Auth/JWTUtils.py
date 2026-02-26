@@ -11,7 +11,7 @@ def create_token(user_id, role, expire_minutes=30):
     payload = {
         "sub": user_id,
         "role": role,
-        "exp": datetime.now(timezone.utc) + datetime.timedelta(minutes=expire_minutes)
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=expire_minutes)
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
     return token

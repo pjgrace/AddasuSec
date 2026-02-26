@@ -22,7 +22,6 @@ Author: Paul Grace
 
 import falcon
 from functools import wraps
-from fastapi import HTTPException, status  # Not used, consider removing
 from falcon import HTTPUnauthorized, HTTPForbidden
 from Runtimes.Auth.JWTUtils import decode_token
 
@@ -91,7 +90,6 @@ def role_required(required_role):
         return wrapper
     return decorator
 
-
 def protect_component_with_role(required_role):
     """
     Class decorator to apply role_required decorator to all callable
@@ -115,3 +113,4 @@ def protect_component_with_role(required_role):
                 setattr(cls, attr_name, method_decorator(attr))
         return cls
     return class_decorator
+
