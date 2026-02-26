@@ -97,4 +97,17 @@ Feel free to fork, open issues, and submit pull requests. Suggested flow:
 - Reconfigure software at runtime securely  
 - Manage component trust boundaries  
 - Model and audit interactions via metadata  
-- Simplify adaptive security architectures in dynamic environments  
+- Simplify adaptive security architectures in dynamic environments
+
+---
+
+## 📚 Developer Guide
+
+To help you build and extend AddasuSec-based systems, we provide a growing set of hands-on tutorials and articles:
+
+- [🧩 Writing Your First Component](./devguide/WritingComponentsGuide.md) – Create secure, type-safe components within a local address space using interfaces and receptacles.
+- [🌐 Writing Web-Based Components](./devguide/WritingWebComponentsGuide.md) – Build and connect and adapt components across distributed address spaces. The tutorial shows how
+to run components in different locations, and then adapt them from a central adaptor.
+- [🔐 Adding Authentication & Access Control](./devguide/AuthenticationAndAccessControlGuide.md) – Integrate security models into your architecture and enforce runtime access policies.
+
+These guides will help you structure, test, and adapt components in real-world systems.  
