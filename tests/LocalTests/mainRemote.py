@@ -1,142 +1,189 @@
+"""Remote integration checks for Addasu components.
+
+This script drives a remote runtime endpoint, creates a small component graph,
+connects and disconnects it, triggers execution through the start component,
+and prints metadata and introspection state for manual inspection.
 """
-RemoteComponentManager.py
 
-Remotely creates, connects, and inspects Addasu components using secure runtime.
-
-Author: Paul Grace
-"""
-
-from AddasuSec.Receptacle import Receptacle
-from Runtimes.runtime import runtime, ComponentException, ConnectionException
-from MetaArchitecture.MetaArchitecture import MetaArchitecture
-
-import os
 import sys
+from pathlib import Path
 
-# === Constants ===
+# Allow the script to be executed directly from ``tests/LocalTests`` while still
+# importing packages from the repository's ``src`` layout.
+PROJECT_SRC = Path(__file__).resolve().parents[2] / "src"
+if str(PROJECT_SRC) not in sys.path:
+    # Prefer the checked-out source tree over any globally installed version.
+    sys.path.insert(0, str(PROJECT_SRC))
+
+from MetaArchitecture.MetaArchitecture import MetaArchitecture
+from Runtimes.runtime import ComponentException, ConnectionException, runtime
+
+# Base URL for the remote runtime process that hosts the components.
 REMOTE_RUNTIME = "http://localhost:8654"
+RUNTIME_TYPE = "plain"
 
+# Stable labels used for creation, metadata queries, and connection reports.
 CALC1 = "Calculator1"
 CALC2 = "Calculator2"
 ADDER = "Adder1"
 SUBBER = "Subber1"
 START = "Start1"
 
+# Interfaces used by the example components.
+ICALCULATE = "Examples.ICalculate"
 IADD = "Examples.IAdd"
 ISUB = "Examples.ISub"
 
-# === Initialise Runtime and MetaArchitecture ===
+# ``MetaArchitecture`` tracks the architecture model locally while the runtime
+# proxy issues create/connect/start requests to the remote address space.
 meta = MetaArchitecture()
-secure_runtime = runtime(meta)
+remote_runtime = runtime(meta)
 
-# === Helper Functions ===
 
 def safe_create(label, module):
+    """Create a remote component and report the result."""
     try:
-        comp = secure_runtime.remoteCreate(REMOTE_RUNTIME, "plain", module, label, False)
-        print(f"✅ Created {label} ({module}) → ID: {meta.getLabel(comp)}")
-        return comp
-    except ComponentException as e:
-        print(f"⚠️  Failed to create {label} ({module}): {e}")
+        component = remote_runtime.remoteCreate(
+            REMOTE_RUNTIME, RUNTIME_TYPE, module, label, False
+        )
+        print(f"Created {label} ({module}) -> ID: {meta.getLabel(component)}")
+        return component
+    except ComponentException as exc:
+        # Duplicate names and invalid definitions are expected in some checks, so
+        # report them and let the script continue.
+        print(f"Failed to create {label} ({module}): {exc}")
         return None
 
-def safe_connect(src_id, tgt_id, intf):
+
+def safe_connect(source_id, target_id, interface):
+    """Connect two remote components and print the outcome."""
     try:
-        if secure_runtime.remoteConnect(REMOTE_RUNTIME, "plain", src_id, tgt_id, intf):
-            print(f"🔗 Connected {meta.getLabel(src_id)} → {meta.getLabel(tgt_id)} ({intf})")
-    except ConnectionException as e:
-        print(f"❌ Failed to connect {src_id} → {tgt_id}: {e}")
-        
-def safe_disconnect(src_id, tgt_id, intf):
+        if remote_runtime.remoteConnect(
+            REMOTE_RUNTIME, RUNTIME_TYPE, source_id, target_id, interface
+        ):
+            print(
+                f"Connected {meta.getLabel(source_id)} -> "
+                f"{meta.getLabel(target_id)} ({interface})"
+            )
+    except ConnectionException as exc:
+        print(f"Failed to connect {source_id} -> {target_id}: {exc}")
+
+
+def safe_disconnect(source_id, target_id, interface):
+    """Disconnect two remote components and print the outcome."""
     try:
-        if secure_runtime.remoteDisconnect(REMOTE_RUNTIME, "plain", src_id, tgt_id, intf):
-            print(f"🔗 Disconnected {meta.getLabel(src_id)} → {meta.getLabel(tgt_id)} ({intf})")
-    except ConnectionException as e:
-        print(f"❌ Failed to connect {src_id} → {tgt_id}: {e}")
-
-def print_connections(title, conn_list):
-    print(f"\n🔍 {title}")
-    for c in conn_list:
-        print(f" ↳ {c}")
-
-# === Component Creation ===
-
-print("\n=== 🚀 Creating Components ===")
-start1 = safe_create(START, "Examples.CalculatorStart")
-calc1 = safe_create(CALC1, "Examples.Calculator")
-calc2 = safe_create(CALC2, "Examples.Calculator")
-add1 = safe_create(ADDER, "Examples.Adder")
-sub1 = safe_create(SUBBER, "Examples.Subber")
-
-# Intentional duplicate (should fail)
-print("\n=== ⚠️ Duplicate Component Creation Test ===")
-safe_create(ADDER, "Examples.Adder")
-
-# === Component Connections ===
-
-print("\n=== 🔗 Connecting Components ===")
-safe_connect(start1, calc1, "Examples.ICalculate")
-safe_connect(calc1, add1, IADD)
-safe_connect(calc2, add1, IADD)
-safe_connect(calc1, sub1, ISUB)
-safe_connect(calc2, sub1, ISUB)
-
-# === Test component configuration runs ===
-secure_runtime.remoteStart(REMOTE_RUNTIME, "plain", start1)
-
-# === Test disconnects ===
+        if remote_runtime.remoteDisconnect(
+            REMOTE_RUNTIME, RUNTIME_TYPE, source_id, target_id, interface
+        ):
+            print(
+                f"Disconnected {meta.getLabel(source_id)} -> "
+                f"{meta.getLabel(target_id)} ({interface})"
+            )
+    except ConnectionException as exc:
+        print(f"Failed to disconnect {source_id} -> {target_id}: {exc}")
 
 
-for c, t, iface in [
+def print_connections(title, connections):
+    """Render connection lists in a readable format for manual inspection."""
+    print(f"\n{title}")
+    for connection in connections:
+        print(f" -> {connection}")
+
+
+def connect_application(start1, calc1, calc2, add1, sub1):
+    """Wire the start component to the calculator graph and service providers."""
+    safe_connect(start1, calc1, ICALCULATE)
+    safe_connect(calc1, add1, IADD)
+    safe_connect(calc2, add1, IADD)
+    safe_connect(calc1, sub1, ISUB)
+    safe_connect(calc2, sub1, ISUB)
+
+
+def disconnect_application(calc1, calc2, add1, sub1):
+    """Remove the calculator-to-service bindings one by one."""
+    for component, target, interface in [
         (calc1, add1, IADD),
         (calc2, add1, IADD),
         (calc1, sub1, ISUB),
         (calc2, sub1, ISUB),
     ]:
-    safe_disconnect(c, t, iface)
-    secure_runtime.remoteStart(REMOTE_RUNTIME, "plain", start1)
-
-# === Call start to see if the configuration runs ===
-print("\n=== 🔗 Connecting Components Again===")
-safe_connect(calc1, add1, IADD)
-safe_connect(calc2, add1, IADD)
-safe_connect(calc1, sub1, ISUB)
-safe_connect(calc2, sub1, ISUB)
-secure_runtime.remoteStart(REMOTE_RUNTIME, "plain", start1)
+        safe_disconnect(component, target, interface)
 
 
-print("\n=== 🧪 Metadata Attribute Test ===")
-meta.setInterfaceAttributeValue(CALC1, IADD, "Variation", 8)
-variation_val = meta.getInterfaceAttributeValue(CALC1, IADD, "Variation")
-print(f"📌 {CALC1}.{IADD}.Variation = {variation_val}")
+def main():
+    # Phase 1: create the remote components needed for the runtime scenario.
+    print("\nCreating components")
+    start1 = safe_create(START, "Examples.CalculatorStart")
+    calc1 = safe_create(CALC1, "Examples.Calculator")
+    calc2 = safe_create(CALC2, "Examples.Calculator")
+    add1 = safe_create(ADDER, "Examples.Adder")
+    sub1 = safe_create(SUBBER, "Examples.Subber")
 
-# === Inspection & Debugging ===
+    # Intentionally repeat one label to confirm the remote runtime rejects
+    # duplicate component creation requests.
+    print("\nDuplicate component creation test")
+    safe_create(ADDER, "Examples.Adder")
 
-print_connections(f"Connections TO {ADDER}.{IADD}", meta.connectionsToIntf(ADDER, IADD))
-print_connections(f"Connections FROM {CALC1}.{IADD}", meta.connectionsFromRecp(CALC1, IADD))
-print_connections(f"Connections FROM {CALC1}.{ISUB}", meta.connectionsFromRecp(CALC1, ISUB))
+    # Phase 2: connect the graph and trigger execution through the start
+    # component so the remote runtime exercises the assembled configuration.
+    print("\nConnecting components")
+    connect_application(start1, calc1, calc2, add1, sub1)
+    remote_runtime.remoteStart(REMOTE_RUNTIME, RUNTIME_TYPE, start1)
 
-# === Interface & Receptacle Introspection ===
+    # Phase 3: disconnect each dependency and start the configuration after each
+    # change so the effect of the missing binding can be observed remotely.
+    print("\nDisconnecting components")
+    for component, target, interface in [
+        (calc1, add1, IADD),
+        (calc2, add1, IADD),
+        (calc1, sub1, ISUB),
+        (calc2, sub1, ISUB),
+    ]:
+        safe_disconnect(component, target, interface)
+        remote_runtime.remoteStart(REMOTE_RUNTIME, RUNTIME_TYPE, start1)
 
-print("\n=== 🧠 Interface Inspection ===")
-for comp in [CALC1, CALC2, ADDER, SUBBER]:
-    print(f"Interfaces on {comp}: {meta.getInterfaces(comp)}")
+    # Phase 4: rebuild the graph and run it again to confirm the configuration
+    # can recover after the disconnect sequence.
+    print("\nReconnecting components")
+    connect_application(start1, calc1, calc2, add1, sub1)
+    remote_runtime.remoteStart(REMOTE_RUNTIME, RUNTIME_TYPE, start1)
 
-print("\n=== 🧠 Receptacle Inspection ===")
-for comp in [CALC2, ADDER, SUBBER]:
-    print(f"Receptacles on {comp}: {meta.getReceptacles(comp)}")
+    # Phase 5: verify metadata read/write behavior using one of the interfaces.
+    print("\nMetadata attribute test")
+    meta.setInterfaceAttributeValue(CALC1, IADD, "Variation", 8)
+    variation_value = meta.getInterfaceAttributeValue(CALC1, IADD, "Variation")
+    print(f"{CALC1}.{IADD}.Variation = {variation_value}")
 
-# === Component Listing & Deletion ===
+    # Phase 6: print the current architectural model for manual debugging.
+    print_connections(f"Connections TO {ADDER}.{IADD}", meta.connectionsToIntf(ADDER, IADD))
+    print_connections(
+        f"Connections FROM {CALC1}.{IADD}", meta.connectionsFromRecp(CALC1, IADD)
+    )
+    print_connections(
+        f"Connections FROM {CALC1}.{ISUB}", meta.connectionsFromRecp(CALC1, ISUB)
+    )
 
-print("\n=== 📋 All Components (Before Deletion) ===")
-all_comps_before = meta.getAllComponents()
-print(all_comps_before)
+    print("\nInterface inspection")
+    for component_name in [CALC1, CALC2, ADDER, SUBBER]:
+        print(f"Interfaces on {component_name}: {meta.getInterfaces(component_name)}")
 
-print(f"\n🗑️ Deleting {CALC2}")
-secure_runtime.delete("plain", CALC2)
+    print("\nReceptacle inspection")
+    for component_name in [CALC2, ADDER, SUBBER]:
+        print(f"Receptacles on {component_name}: {meta.getReceptacles(component_name)}")
 
-print("\n📋 All Components (After Deletion):")
-all_comps_after = meta.getAllComponents()
-print(all_comps_after)
+    # Phase 7: show the complete component list before and after deleting one
+    # component so the remote runtime cleanup is visible in the meta-model.
+    print("\nAll components before deletion")
+    all_components_before = meta.getAllComponents()
+    print(all_components_before)
+
+    print(f"\nDeleting {CALC2}")
+    remote_runtime.delete(RUNTIME_TYPE, CALC2)
+
+    print("\nAll components after deletion")
+    all_components_after = meta.getAllComponents()
+    print(all_components_after)
 
 
+if __name__ == "__main__":
+    main()

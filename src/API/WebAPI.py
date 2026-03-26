@@ -4,6 +4,11 @@ from Runtimes.runtime import runtime
 from MetaArchitecture.MetaArchitecture import MetaArchitecture  # Assume this module is available
 
 
+"""
+Implementation of the runtime API. Create/Delete/Connect/Disconnect.
+
+"""
+
 # Initialize MetaArchitecture and runtime instances
 meta = MetaArchitecture()
 rt = runtime(meta)

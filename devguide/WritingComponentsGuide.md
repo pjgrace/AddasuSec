@@ -185,5 +185,3 @@ The AddasuSec framework enables secure, adaptive component systems. Following in
 > 🧠 Want more? Extend this with logging, dynamic switching, or trust-policy tagging.
 
 ---
-
-Let us know if you want a CLI wizard or GUI for building components. Happy building! 🔧
