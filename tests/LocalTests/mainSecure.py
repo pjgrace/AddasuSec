@@ -14,11 +14,17 @@ Test Validations:
 - Component list and deletion
 """
 
+import requests
+import sys
+from pathlib import Path
+
+PROJECT_SRC = Path(__file__).resolve().parents[2] / "src"
+if str(PROJECT_SRC) not in sys.path:
+    sys.path.insert(0, str(PROJECT_SRC))
+
 from AddasuSec.Receptacle import Receptacle
 from Runtimes.runtime import runtime, ComponentException, ConnectionException
 from MetaArchitecture.MetaArchitecture import MetaArchitecture
-import requests
-import sys
 
 # Constants for reuse
 RUNTIME_TYPE = "plain"

@@ -1,3 +1,14 @@
+import sys
+from pathlib import Path
+
+# Allow the script to be executed directly from ``tests/LocalTests`` while still
+# importing packages from the repository's ``src`` layout.
+PROJECT_SRC = Path(__file__).resolve().parents[2] / "src"
+if str(PROJECT_SRC) not in sys.path:
+    # Prefer the checked-out source tree over any globally installed version.
+    sys.path.insert(0, str(PROJECT_SRC))
+
+
 import importlib
 import inspect
 from typing import get_type_hints
